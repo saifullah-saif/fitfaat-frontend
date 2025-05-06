@@ -1,0 +1,197 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Add the Alinur Shishir font */
+@font-face {
+  font-family: "Alinur Shishir";
+  src: url("/fonts/AlinurShishir.woff2") format("woff2");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@layer base {
+  :root {
+    --background: 0 0% 96%; /* #F5F5F4 */
+    --foreground: 240 10% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 3.9%;
+    --primary: 45 100% 50%; /* Gold/Yellow from the branding */
+    --primary-foreground: 355.7 100% 97.3%;
+    --secondary: 240 4.8% 95.9%;
+    --secondary-foreground: 240 5.9% 10%;
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
+    --accent: 240 4.8% 95.9%;
+    --accent-foreground: 240 5.9% 10%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+    --ring: 45 100% 50%; /* Gold/Yellow from the branding */
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 222 47% 8%; /* #101218 */
+    --foreground: 0 0% 95%;
+    --card: 222 47% 11%;
+    --card-foreground: 0 0% 95%;
+    --popover: 222 47% 11%;
+    --popover-foreground: 0 0% 95%;
+    --primary: 45 100% 50%; /* Gold/Yellow from the branding */
+    --primary-foreground: 144.9 80.4% 10%;
+    --secondary: 217 32.6% 17.5%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 217 32.6% 17.5%;
+    --muted-foreground: 240 5% 64.9%;
+    --accent: 217 32.6% 17.5%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 85.7% 97.3%;
+    --border: 217 32.6% 17.5%;
+    --input: 217 32.6% 17.5%;
+    --ring: 45 100% 50%; /* Gold/Yellow from the branding */
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+/* Bengali font class */
+.bengali-font {
+  font-family: "Alinur Shishir", sans-serif;
+}
+
+/* Material UI inspired styles */
+.material-card {
+  @apply rounded-lg shadow-lg transition-all duration-300 hover:shadow-xl;
+  backdrop-filter: blur(10px);
+  background: rgba(var(--card-rgb), 0.8);
+}
+
+.material-button {
+  @apply rounded-full shadow-md transition-all duration-300 hover:shadow-lg;
+}
+
+.material-input {
+  @apply rounded-md border-0 shadow-sm transition-all duration-300 focus:shadow-md;
+}
+
+/* Fix for mobile viewport height issues */
+html,
+body {
+  height: 100%;
+}
+
+/* Fix for hydration mismatch flicker */
+.no-js {
+  display: none;
+}
+
+/* Improve scrolling experience */
+@media (max-width: 640px) {
+  .container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+}
+
+/* Fix for mobile menu */
+.mobile-menu-open {
+  overflow: hidden;
+}
+
+/* Material UI inspired card */
+.mui-card {
+  @apply rounded-xl overflow-hidden;
+  background: rgba(var(--card-rgb), 0.7);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.14), 0 7px 10px -5px rgba(0, 0, 0, 0.4);
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.mui-card:hover {
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.25), 0 10px 10px rgba(0, 0, 0, 0.22);
+  transform: translateY(-2px);
+}
+
+/* Material UI inspired progress */
+.mui-progress-container {
+  @apply relative h-2 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700;
+}
+
+.mui-progress-bar {
+  @apply h-full rounded-full transition-all duration-300 ease-in-out;
+  background: linear-gradient(90deg, var(--start-color, #10b981) 0%, var(--end-color, #3b82f6) 100%);
+}
+
+/* Material UI inspired circular progress */
+.mui-circular-progress {
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1));
+}
+
+.mui-circular-progress:hover {
+  filter: drop-shadow(0 10px 15px rgba(0, 0, 0, 0.2));
+  transform: scale(1.02);
+}
+
+/* Material UI inspired widgets */
+.mui-widget {
+  @apply rounded-xl p-4 transition-all duration-300;
+  background: rgba(var(--card-rgb), 0.7);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+}
+
+.mui-widget:hover {
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.25), 0 10px 10px rgba(0, 0, 0, 0.22);
+  transform: translateY(-2px);
+}
+
+/* Dark mode specific variables */
+.dark {
+  --card-rgb: 26, 32, 44;
+}
+
+/* Light mode specific variables */
+:root {
+  --card-rgb: 255, 255, 255;
+}
+
+/* Cart Badge */
+.cart-badge {
+  @apply absolute -top-1 -right-1 flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-primary rounded-full;
+}
+
+/* Product Card */
+.product-card {
+  @apply bg-card rounded-lg border border-border/50 overflow-hidden transition-all duration-200;
+  width: 100%;
+  max-width: 180px; /* Smaller cards */
+}
+
+.product-card:hover {
+  @apply border-primary/50 shadow-md;
+  transform: translateY(-2px);
+}
+
+/* Payment Form */
+.payment-form-input {
+  @apply w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary;
+}
+
+.payment-section {
+  @apply mb-6 p-4 border border-gray-200 rounded-lg;
+}

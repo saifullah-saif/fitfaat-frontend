@@ -1,0 +1,436 @@
+-- Users and Authentication
+CREATE TABLE users (
+  user_id INT AUTO_INCREMENT PRIMARY KEY,
+  username VARCHAR(50) NOT NULL UNIQUE,
+  email VARCHAR(100) NOT NULL UNIQUE,
+  password_hash VARCHAR(255) NOT NULL,
+  first_name VARCHAR(50),
+  last_name VARCHAR(50),
+  date_of_birth DATE,
+  gender ENUM('Male', 'Female'),
+  profile_picture VARCHAR(255),
+  location VARCHAR(100),
+  role ENUM('User', 'Admin') DEFAULT 'User',
+  quiz_status ENUM('Taken', 'Pending') DEFAULT 'Pending'
+);
+
+-- User Health Profiles
+CREATE TABLE health_profiles (
+  health_profile_id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  height DECIMAL(5,2), -- in cm
+  weight DECIMAL(5,2), -- in kg
+  target_weight DECIMAL(5,2), -- in kg
+  activity_level ENUM('Sedentary', 'Lightly Active', 'Moderately Active', 'Very Active', 'Extremely Active'),
+  goal_type ENUM('Weight Loss', 'Weight Gain', 'Maintenance', 'Muscle Building', 'Overall Fitness'),
+  daily_calorie_target INT,
+  dietary_preferences ENUM('Vegan', 'Vegeterian', 'Mixed', 'Non-Veg'),
+  allergies VARCHAR(255),
+  medical_conditions VARCHAR(255),
+  FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+);
+
+-- Diet Plans and Food Tracking
+CREATE TABLE meal_types (
+  meal_type_id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(50) NOT NULL
+);
+
+CREATE TABLE food_items (
+  food_id INT AUTO_INCREMENT PRIMARY KEY,
+  meal_type_id INT NOT NULL ,
+  name VARCHAR(100) NOT NULL,
+  description TEXT,
+  calories_per_100g DECIMAL(6,2) NOT NULL,
+  protein_per_100g DECIMAL(6,2),
+  carbs_per_100g DECIMAL(6,2),
+  fat_per_100g DECIMAL(6,2),
+  fiber_per_100g DECIMAL(6,2),
+  sugar_per_100g DECIMAL(6,2),
+  serving_size DECIMAL(6,2),
+  serving_unit VARCHAR(20),
+  food_category VARCHAR(50),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (meal_type_id) REFERENCES meal_types(meal_type_id) ON DELETE CASCADE
+);
+
+CREATE TABLE diet_plans (
+  diet_plan_id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,
+  description TEXT,
+  daily_calorie_range VARCHAR(20),
+  plan_type VARCHAR(11) CHECK (plan_type IN ('Weight Loss', 'Weight Gain', 'Maintenance', 'Custom')),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE user_diet_plans (
+  user_diet_plan_id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  diet_plan_id INT NOT NULL,
+  start_date DATE NOT NULL,
+  end_date DATE,
+  is_active BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+  FOREIGN KEY (diet_plan_id) REFERENCES diet_plans(diet_plan_id) ON DELETE CASCADE
+);
+
+CREATE TABLE planned_meals (
+  planned_meal_id INT AUTO_INCREMENT PRIMARY KEY,
+  user_diet_plan_id INT NOT NULL,
+  meal_type_id INT NOT NULL,
+  day_of_week ENUM('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_diet_plan_id) REFERENCES user_diet_plans(user_diet_plan_id) ON DELETE CASCADE,
+  FOREIGN KEY (meal_type_id) REFERENCES meal_types(meal_type_id) ON DELETE CASCADE
+);
+
+-- Workout Plans and Tracking
+CREATE TABLE exercise_categories (
+  category_id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(50) NOT NULL,
+  description TEXT
+);
+
+CREATE TABLE exercises (
+  exercise_id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,
+  description TEXT,
+  category_id INT NOT NULL,
+  difficulty_level VARCHAR(12) CHECK (difficulty_level IN ('Beginner', 'Intermediate', 'Advanced')),
+  equipment_needed TEXT,
+  muscle_group VARCHAR(100),
+  video_tutorial_url VARCHAR(255),
+  image_url VARCHAR(255),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (category_id) REFERENCES exercise_categories(category_id)
+);
+
+CREATE TABLE workout_plans (
+  workout_plan_id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,
+  description TEXT,
+  goal_type VARCHAR(16) CHECK (goal_type IN ('Weight Loss', 'Muscle Building', 'Endurance', 'Flexibility', 'General Fitness')),
+  difficulty_level VARCHAR(12) CHECK (difficulty_level IN ('Beginner', 'Intermediate', 'Advanced')),
+  duration_weeks INTEGER,
+  days_per_week INTEGER,
+  is_default BOOLEAN DEFAULT FALSE
+);
+
+CREATE TABLE user_workout_plans (
+  user_workout_plan_id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL REFERENCES users(user_id),
+  workout_plan_id INT NOT NULL REFERENCES workout_plans(workout_plan_id),
+  start_date DATE NOT NULL,
+  end_date DATE,
+  is_active BOOLEAN DEFAULT TRUE,
+  FOREIGN KEY (user_id)  REFERENCES users(user_id),
+  FOREIGN KEY (workout_plan_id)  REFERENCES workout_plans(workout_plan_id)
+);
+
+CREATE TABLE user_workout_logs (
+  log_id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  exercise_id INT NOT NULL,
+  log_date DATE NOT NULL,
+  is_completed BOOLEAN,
+  calories_burned INTEGER,
+  notes TEXT,
+  rating INTEGER,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id)  REFERENCES users(user_id),
+  FOREIGN KEY (exercise_id)  REFERENCES exercises(exercise_id)
+
+);
+
+-- Goals and Progress Tracking
+CREATE TABLE user_goals (
+  goal_id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  goal_type ENUM('Weight', 'Body Measurements', 'Workout', 'Dietary', 'Custom'),
+  title VARCHAR(100) NOT NULL,
+  description TEXT,
+  target_value DECIMAL(8,2),
+  unit VARCHAR(20),
+  start_date DATE NOT NULL,
+  target_date DATE,
+  status ENUM('Not Started', 'In Progress', 'Completed', 'Abandoned') DEFAULT 'Not Started',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+);
+
+CREATE TABLE user_measurements (
+  measurement_id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  measurement_date DATE NOT NULL,
+  weight DECIMAL(5,2),
+  height DECIMAL(5,2),
+  chest DECIMAL(5,2),
+  waist DECIMAL(5,2),
+  hips DECIMAL(5,2),
+  body_fat_percentage DECIMAL(4,2),
+  muscle_mass DECIMAL(5,2),
+  bmi DECIMAL(4,2),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+);
+
+-- Community and Social Features
+CREATE TABLE fitness_groups (
+  group_id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,
+  description TEXT,
+  creator_user_id INT NOT NULL,
+  location VARCHAR(100),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (creator_user_id) REFERENCES users(user_id) ON DELETE CASCADE
+);
+
+CREATE TABLE group_members (
+  group_member_id INT AUTO_INCREMENT PRIMARY KEY,
+  group_id INTEGER NOT NULL,
+  user_id INTEGER NOT NULL,
+  role ENUM('Member', 'Moderator', 'Admin') DEFAULT 'Member',
+  join_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  status ENUM('Pending', 'Approved', 'Rejected', 'Banned') DEFAULT 'Pending',
+  UNIQUE (group_id, user_id),
+  FOREIGN KEY (group_id) REFERENCES fitness_groups(group_id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+);
+
+CREATE TABLE posts (
+  post_id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  group_id INT NOT NULL,
+  content TEXT NOT NULL,
+  image_url VARCHAR(255),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  is_pinned BOOLEAN DEFAULT FALSE,
+  FOREIGN KEY (group_id) REFERENCES fitness_groups(group_id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+);
+
+CREATE TABLE comments (
+  comment_id INT AUTO_INCREMENT PRIMARY KEY,
+  post_id INT NOT NULL,
+  user_id INT NOT NULL,
+  content TEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (post_id) REFERENCES posts(post_id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+);
+
+CREATE TABLE likes (
+  like_id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  post_id INT NOT NULL ,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE (user_id, post_id),
+  FOREIGN KEY (post_id) REFERENCES posts(post_id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+);
+
+CREATE TABLE user_connections (
+  connection_id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,               
+  connected_user_id INT NOT NULL,    
+  user_a INT NOT NULL,               
+  user_b INT NOT NULL,               
+  status ENUM('Pending', 'Accepted', 'Rejected', 'Blocked') NOT NULL DEFAULT 'Pending',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(user_id),
+  FOREIGN KEY (connected_user_id) REFERENCES users(user_id)
+  );
+
+CREATE TABLE messages (
+  message_id INT AUTO_INCREMENT PRIMARY KEY,
+  sender_id INTEGER NOT NULL REFERENCES users(user_id),
+  receiver_id INTEGER NOT NULL REFERENCES users(user_id),
+  content TEXT NOT NULL,
+  sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (sender_id) REFERENCES users(user_id),
+  FOREIGN KEY (receiver_id) REFERENCES users(user_id)
+  
+);
+
+-- User rankings
+CREATE TABLE user_rankings (
+  ranking_id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  points INTEGER NOT NULL DEFAULT 0,
+  level INTEGER NOT NULL DEFAULT 1,
+  rank_title VARCHAR(50),
+  week_number INTEGER,
+  year INTEGER,
+  is_current BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(user_id)
+
+);
+
+-- Nearby Gyms
+CREATE TABLE gyms (
+  gym_id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,
+  description TEXT,
+  address TEXT NOT NULL,
+  phone VARCHAR(20),
+  website VARCHAR(255),
+  operating_hours TEXT,
+  logo_url VARCHAR(255)
+);
+
+-- Product Shop Management
+CREATE TABLE product_categories (
+  category_id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(50) NOT NULL,
+  description TEXT,
+  parent_category_id INT NOT NULL,
+  FOREIGN KEY (parent_category_id) REFERENCES product_categories(category_id)
+);
+
+CREATE TABLE products (
+  product_id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,
+  description TEXT,
+  category_id INT NOT NULL,
+  price DECIMAL(10,2) NOT NULL,
+  sale_price DECIMAL(10,2),
+  stock_quantity INTEGER NOT NULL DEFAULT 0,
+  sku VARCHAR(50) UNIQUE,
+  image_url VARCHAR(255),
+  FOREIGN KEY (category_id) REFERENCES product_categories(category_id)
+);
+
+CREATE TABLE product_images (
+  image_id INT AUTO_INCREMENT PRIMARY KEY,
+  product_id INT NOT NULL,
+  image_url VARCHAR(255) NOT NULL,
+  is_primary BOOLEAN DEFAULT FALSE,
+  display_order INTEGER,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (product_id) REFERENCES products(product_id)
+);
+
+CREATE TABLE carts (
+  cart_id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+);
+
+CREATE TABLE cart_items (
+  cart_item_id INT AUTO_INCREMENT PRIMARY KEY,
+  cart_id INT NOT NULL,
+  product_id INT NOT NULL,
+  quantity INTEGER NOT NULL DEFAULT 1,
+  added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (cart_id) REFERENCES carts(cart_id),
+  FOREIGN KEY (product_id) REFERENCES products(product_id)
+);
+
+CREATE TABLE wishlists (
+  wishlist_id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  name VARCHAR(100) NOT NULL DEFAULT 'My Wishlist',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+  
+);
+
+CREATE TABLE wishlist_items (
+  wishlist_item_id INT AUTO_INCREMENT PRIMARY KEY,
+  wishlist_id INT NOT NULL,
+  product_id INT NOT NULL,
+  added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE (wishlist_id, product_id),
+  FOREIGN KEY (wishlist_id) REFERENCES wishlists(wishlist_id),
+  FOREIGN KEY (product_id) REFERENCES products(product_id)
+);
+
+CREATE TABLE orders (
+  order_id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  order_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  status ENUM('Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled', 'Refunded') DEFAULT 'Pending',
+  shipping_address TEXT NOT NULL,
+  billing_address TEXT NOT NULL,
+  payment_method VARCHAR(50) NOT NULL,
+  shipping_method VARCHAR(50) NOT NULL,
+  subtotal DECIMAL(10,2) NOT NULL,
+  shipping_cost DECIMAL(10,2) NOT NULL,
+  tax DECIMAL(10,2) NOT NULL,
+  total_amount DECIMAL(10,2) NOT NULL,
+  tracking_number VARCHAR(100),
+  FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+);
+
+CREATE TABLE order_items (
+  order_item_id INT AUTO_INCREMENT PRIMARY KEY,
+  order_id INT NOT NULL,
+  product_id INT NOT NULL,
+  quantity INT NOT NULL,
+  price_per_unit DECIMAL(10,2) NOT NULL,
+  total_price DECIMAL(10,2) NOT NULL,
+  FOREIGN KEY (order_id) REFERENCES orders(order_id),
+  FOREIGN KEY (product_id) REFERENCES products(product_id)
+);
+
+CREATE TABLE product_ratings (
+  rating_id INT AUTO_INCREMENT PRIMARY KEY,
+  product_id INT NOT NULL,
+  user_id INT NOT NULL,
+  rating INTEGER NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE (product_id, user_id),
+  FOREIGN KEY (product_id) REFERENCES products(product_id),
+  FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+);
+
+-- Administrative Features
+CREATE TABLE admin_notifications (
+  notification_id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  message TEXT NOT NULL,
+  is_accepted ENUM('Pending', 'Accepted', 'Rejected'),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+);
+
+-- Create indexes for performance improvements
+CREATE INDEX idx_health_profiles_user_id ON health_profiles(user_id);
+CREATE INDEX idx_user_diet_plans_user_id ON user_diet_plans(user_id);
+CREATE INDEX idx_user_workout_plans_user_id ON user_workout_plans(user_id);
+CREATE INDEX idx_user_workout_logs_user_id ON user_workout_logs(user_id);
+CREATE INDEX idx_user_goals_user_id ON user_goals(user_id);
+CREATE INDEX idx_user_measurements_user_id ON user_measurements(user_id);
+CREATE INDEX idx_posts_user_id ON posts(user_id);
+CREATE INDEX idx_posts_group_id ON posts(group_id);
+CREATE INDEX idx_comments_post_id ON comments(post_id);
+CREATE INDEX idx_comments_user_id ON comments(user_id);
+CREATE INDEX idx_likes_user_id ON likes(user_id);
+CREATE INDEX idx_likes_post_id ON likes(post_id);
+CREATE INDEX idx_likes_comment_id ON likes(comment_id);
+CREATE INDEX idx_user_connections_user_id ON user_connections(user_id);
+CREATE INDEX idx_user_connections_connected_user_id ON user_connections(connected_user_id);
+CREATE INDEX idx_messages_sender_id ON messages(sender_id);
+CREATE INDEX idx_messages_receiver_id ON messages(receiver_id);
+CREATE INDEX idx_user_rankings_user_id ON user_rankings(user_id);
+CREATE INDEX idx_orders_user_id ON orders(user_id);
+CREATE INDEX idx_order_items_order_id ON order_items(order_id);
+CREATE INDEX idx_product_ratings_product_id ON product_ratings(product_id);
+CREATE INDEX idx_admin_notifications_user_id ON admin_notifications(user_id);

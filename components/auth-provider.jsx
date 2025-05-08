@@ -24,12 +24,41 @@ export function AuthProvider({ children }) {
   }
 
   useEffect(() => {
-    // Check if user is stored in localStorage
-    const storedUser = localStorage.getItem("fitfaat_user")
-    if (storedUser) {
-      setUser(JSON.parse(storedUser))
-    }
-    setLoading(false)
+    const checkAuthStatus = async () => {
+      try {
+        // First check if user is stored in localStorage
+        const storedUser = localStorage.getItem("fitfaat_user")
+        if (storedUser) {
+          setUser(JSON.parse(storedUser))
+        }
+
+        // Then verify with the server if the JWT token is valid
+        const response = await fetch("http://localhost:5000/auth/me", {
+          method: "GET",
+          credentials: "include",
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data && data.user) {
+            // Update user data with the latest from server
+            setUser(data.user);
+            localStorage.setItem("fitfaat_user", JSON.stringify(data.user));
+          }
+        } else {
+          // If token is invalid, clear user data
+          localStorage.removeItem("fitfaat_user");
+          setUser(null);
+        }
+      } catch (error) {
+        console.error("Auth check error:", error);
+        // Don't clear user data on network errors to allow offline usage
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkAuthStatus();
   }, [])
 
   useEffect(() => {
@@ -52,19 +81,49 @@ export function AuthProvider({ children }) {
         return { success: false, error: "Email and password are required" }
       }
 
-      // In a real app, this would validate against a backend
-      // For demo purposes, accept any credentials
-      setUser(mockUser)
-      localStorage.setItem("fitfaat_user", JSON.stringify(mockUser))
-      router.push("/")
-      return { success: true }
+      // Call the server login endpoint
+      const response = await fetch("http://localhost:5000/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        return { success: false, error: errorData.error || "Login failed" };
+      }
+
+      const data = await response.json();
+
+      // Store user data in localStorage
+      if (data && data.user) {
+        setUser(data.user);
+        localStorage.setItem("fitfaat_user", JSON.stringify(data.user));
+        router.push("/dashboard");
+        return { success: true };
+      } else {
+        return { success: false, error: "Invalid response from server" };
+      }
     } catch (error) {
-      console.error("Login error:", error.message)
-      return { success: false, error: error.message }
+      console.error("Login error:", error.message);
+
+      // For development/demo purposes, fallback to mock user if server is not available
+      if (process.env.NODE_ENV === "development") {
+        console.log("Using mock user for development");
+        setUser(mockUser);
+        localStorage.setItem("fitfaat_user", JSON.stringify(mockUser));
+        router.push("/dashboard");
+        return { success: true };
+      }
+
+      return { success: false, error: error.message };
     }
   }
 
-  const signup = async (email, password, userData) => {
+  const signup = async (username, email, password, userData) => {
     try {
       // Validate email format
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -77,30 +136,84 @@ export function AuthProvider({ children }) {
         return { success: false, error: "Password must be at least 6 characters long" }
       }
 
-      // Create a new user with the provided data
-      const newUser = {
-        ...mockUser,
-        email: email,
-        name: userData.name || "New User",
+      // Call the server signup endpoint
+      const response = await fetch("http://localhost:5000/auth/signup", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          username,
+          email,
+          password,
+          first_name: userData.first_name || "",
+          last_name: userData.last_name || "",
+          date_of_birth: userData.date_of_birth || "",
+          gender: userData.gender || "Male",
+          location: userData.location || "",
+        }),
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        return { success: false, error: errorData.error || "Signup failed" };
       }
 
-      setUser(newUser)
-      localStorage.setItem("fitfaat_user", JSON.stringify(newUser))
+      const data = await response.json();
 
-      // Redirect to onboarding page instead of dashboard
-      router.push("/onboarding")
+      // Store user data in localStorage
+      if (data && data.user) {
+        setUser(data.user);
+        localStorage.setItem("fitfaat_user", JSON.stringify(data.user));
 
-      return { success: true, message: "Account created successfully!" }
+        // Redirect to onboarding page instead of dashboard
+        router.push("/onboarding");
+        return { success: true, message: "Account created successfully!" };
+      } else {
+        return { success: false, error: "Invalid response from server" };
+      }
     } catch (error) {
-      console.error("Signup error:", error.message)
-      return { success: false, error: error.message || "An unexpected error occurred" }
+      console.error("Signup error:", error.message);
+
+      // For development/demo purposes, fallback to mock user if server is not available
+      if (process.env.NODE_ENV === "development") {
+        console.log("Using mock user for development");
+        const newUser = {
+          ...mockUser,
+          email: email,
+          name: userData.first_name || "New User",
+        };
+
+        setUser(newUser);
+        localStorage.setItem("fitfaat_user", JSON.stringify(newUser));
+        router.push("/onboarding");
+        return { success: true, message: "Account created successfully!" };
+      }
+
+      return { success: false, error: error.message || "An unexpected error occurred" };
     }
   }
 
   const logout = async () => {
-    setUser(null)
-    localStorage.removeItem("fitfaat_user")
-    router.push("/")
+    try {
+      // Call the server logout endpoint to clear the JWT cookie
+      await fetch("http://localhost:5000/auth/logout", {
+        method: "POST",
+        credentials: "include",
+      });
+
+      // Clear local user data
+      setUser(null)
+      localStorage.removeItem("fitfaat_user")
+      router.push("/")
+    } catch (error) {
+      console.error("Logout error:", error)
+      // Even if the server call fails, clear local data
+      setUser(null)
+      localStorage.removeItem("fitfaat_user")
+      router.push("/")
+    }
   }
 
   const value = {

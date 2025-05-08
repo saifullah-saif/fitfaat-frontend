@@ -1,7 +1,7 @@
 "use client"
-
+import axios from "axios"
 import { useState, useEffect } from "react"
-import { useAuth } from "./auth-provider"
+
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
@@ -13,15 +13,20 @@ import { AlertCircle } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 
 export function SignupForm() {
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [name, setName] = useState("")
+  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [first_name, setFirstName] = useState("");
+  const [last_name, setLastName] = useState("");
+  const [date_of_birth, setDateOfBirth] = useState("");
+  const [gender, setGender] = useState("Male");
+  const [location, setLocation] = useState("");
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
   const [successMessage, setSuccessMessage] = useState("")
-  const { signup } = useAuth()
-  const router = useRouter()
   const [theme, setTheme] = useState("dark")
+
+  const router = useRouter()
 
   // Check theme
   useEffect(() => {
@@ -30,7 +35,7 @@ export function SignupForm() {
   }, [])
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
+    e.preventDefault();
     setIsLoading(true)
     setError("")
     setSuccessMessage("")
@@ -43,24 +48,38 @@ export function SignupForm() {
     }
 
     try {
-      if (typeof signup !== "function") {
-        throw new Error("Signup function is not available")
-      }
+      await axios.post(
+        "http://localhost:5000/auth/signup",
+        {
+          username,
+          email,
+          password,
+          first_name,
+          last_name,
+          date_of_birth,
+          gender,
+          location
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          withCredentials: true
+        }
+      );
 
-      const result = await signup(email, password, { name })
-      if (!result.success) {
-        setError(result.error || "Failed to sign up")
-      } else {
-        setSuccessMessage("Account created successfully! Redirecting to onboarding...")
-        // Router push is handled in the signup function
-      }
-    } catch (err) {
-      console.error("Signup error:", err)
-      setError("An unexpected error occurred. Please try again.")
+      setSuccessMessage("Account created successfully!");
+      // Redirect to login page after successful signup
+      setTimeout(() => {
+        router.push("/login");
+      }, 1500);
+    } catch (error) {
+      console.error("Signup error:", error);
+      setError(error.response?.data?.error || "Signup failed. Please try again.");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-100 dark:bg-gray-900 p-4">
@@ -98,13 +117,13 @@ export function SignupForm() {
 
           <form className="space-y-4" onSubmit={handleSubmit}>
             <div className="space-y-2">
-              <Label htmlFor="name">Full Name</Label>
+              <Label htmlFor="name">Username</Label>
               <Input
                 id="name"
                 type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Enter your full name"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="Username"
                 required
               />
             </div>
@@ -132,6 +151,64 @@ export function SignupForm() {
                 minLength={6}
               />
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="firstname">First Name</Label>
+              <Input
+                id="firstname"
+                type="text"
+                value={first_name}
+                onChange={(e) => setFirstName(e.target.value)}
+                placeholder="First Name"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="lastname">Last Name</Label>
+              <Input
+                id="lastname"
+                type="text"
+                placeholder="Last Name"
+                value={last_name}
+                onChange={(e) => setLastName(e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="date">Date of Birth</Label>
+              <Input
+                id="date"
+                type="date"
+                value={date_of_birth}
+                onChange={(e) => setDateOfBirth(e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="gender">Select Gender</Label>
+              <select
+                id="gender"
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                value={gender}
+                onChange={(e) => setGender(e.target.value)}
+                required
+              >
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="location">Location</Label>
+              <Input
+                id="location"
+                type="text"
+                placeholder="Dhaka"
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                required
+              />
+            </div>
+
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? "Creating account..." : "Sign up"}
             </Button>

@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useCallback } from "react"
+import axios from "axios"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -19,250 +20,18 @@ import {
 import { toast } from "@/hooks/use-toast"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
-const products = [
-  {
-    id: 1,
-    name: "Premium Protein Powder",
-    category: "Supplements",
-    price: 49.99,
-    rating: 4.8,
-    reviews: [
-      {
-        id: 1,
-        user: "Alex Johnson",
-        avatar: "/placeholder.svg?height=40&width=40",
-        rating: 5,
-        date: "2023-10-15",
-        comment: "Great taste and mixes well. I've seen significant improvements in my recovery time.",
-      },
-      {
-        id: 2,
-        user: "Sarah Williams",
-        avatar: "/placeholder.svg?height=40&width=40",
-        rating: 4,
-        date: "2023-09-22",
-        comment: "Good product but a bit expensive. The chocolate flavor is delicious though!",
-      },
-    ],
-    reviewCount: 124,
-    image: "/placeholder.svg?height=200&width=200",
-    description: "High-quality whey protein with 25g protein per serving. Chocolate flavor.",
-    details: {
-      servingSize: "30g scoop",
-      servingsPerContainer: 30,
-      protein: "25g per serving",
-      calories: "120 per serving",
-      flavors: ["Chocolate", "Vanilla", "Strawberry"],
-      ingredients: "Whey Protein Isolate, Cocoa Powder, Natural and Artificial Flavors, Lecithin, Sucralose",
-    },
-    images: [
-      "/placeholder.svg?height=400&width=400",
-      "/placeholder.svg?height=400&width=400",
-      "/placeholder.svg?height=400&width=400",
-    ],
-  },
-  {
-    id: 2,
-    name: "Adjustable Dumbbells Set",
-    category: "Equipment",
-    price: 299.99,
-    rating: 4.7,
-    reviews: [
-      {
-        id: 1,
-        user: "Mike Chen",
-        avatar: "/placeholder.svg?height=40&width=40",
-        rating: 5,
-        date: "2023-11-05",
-        comment: "These dumbbells are amazing! They save so much space in my home gym.",
-      },
-      {
-        id: 2,
-        user: "Emma Rodriguez",
-        avatar: "/placeholder.svg?height=40&width=40",
-        rating: 4,
-        date: "2023-10-18",
-        comment: "Great quality but the weight adjustment mechanism can be a bit finicky sometimes.",
-      },
-    ],
-    reviewCount: 89,
-    image: "/placeholder.svg?height=200&width=200",
-    description: "5-50 lbs adjustable dumbbells. Space-saving design for home gyms.",
-    details: {
-      weightRange: "5-50 lbs (2.3-22.7 kg) per dumbbell",
-      adjustmentIncrement: "5 lbs (2.3 kg)",
-      dimensions: '16.9" x 8.3" x 9.5" (L x W x H)',
-      material: "Steel, Nylon, Rubber",
-      warranty: "2 years",
-    },
-    images: [
-      "/placeholder.svg?height=400&width=400",
-      "/placeholder.svg?height=400&width=400",
-      "/placeholder.svg?height=400&width=400",
-    ],
-  },
-  {
-    id: 3,
-    name: "Fitness Tracker Watch",
-    category: "Wearables",
-    price: 129.99,
-    rating: 4.5,
-    reviews: [
-      {
-        id: 1,
-        user: "David Kim",
-        avatar: "/placeholder.svg?height=40&width=40",
-        rating: 5,
-        date: "2023-11-10",
-        comment: "The battery life is incredible! I only need to charge it once a week.",
-      },
-      {
-        id: 2,
-        user: "Olivia Taylor",
-        avatar: "/placeholder.svg?height=40&width=40",
-        rating: 4,
-        date: "2023-10-25",
-        comment: "Great fitness tracker but the sleep tracking could be more accurate.",
-      },
-    ],
-    reviewCount: 210,
-    image: "/placeholder.svg?height=200&width=200",
-    description: "Track steps, heart rate, sleep, and workouts. Water-resistant.",
-    details: {
-      display: '1.4" AMOLED Touch Screen',
-      battery: "Up to 7 days",
-      waterResistance: "5 ATM",
-      sensors: "Heart rate, accelerometer, gyroscope, SpO2",
-      connectivity: "Bluetooth 5.0, GPS",
-      compatibility: "iOS 12.0+, Android 7.0+",
-    },
-    images: [
-      "/placeholder.svg?height=400&width=400",
-      "/placeholder.svg?height=400&width=400",
-      "/placeholder.svg?height=400&width=400",
-    ],
-  },
-  {
-    id: 4,
-    name: "Resistance Bands Set",
-    category: "Equipment",
-    price: 24.99,
-    rating: 4.6,
-    reviews: [
-      {
-        id: 1,
-        user: "James Wilson",
-        avatar: "/placeholder.svg?height=40&width=40",
-        rating: 5,
-        date: "2023-09-15",
-        comment: "Great quality bands that don't snap like cheaper ones I've tried before.",
-      },
-      {
-        id: 2,
-        user: "Sophia Martinez",
-        avatar: "/placeholder.svg?height=40&width=40",
-        rating: 4,
-        date: "2023-08-22",
-        comment: "Good variety of resistance levels. The carrying bag is a nice touch.",
-      },
-    ],
-    reviewCount: 156,
-    image: "/placeholder.svg?height=200&width=200",
-    description: "Set of 5 resistance bands with different resistance levels.",
-    details: {
-      resistanceLevels: "10, 15, 20, 25, 30 lbs",
-      material: "Natural latex",
-      includes: "5 bands, carrying bag, exercise guide",
-      length: "48 inches each",
-    },
-    images: [
-      "/placeholder.svg?height=400&width=400",
-      "/placeholder.svg?height=400&width=400",
-      "/placeholder.svg?height=400&width=400",
-    ],
-  },
-  {
-    id: 5,
-    name: "Pre-Workout Energy Drink",
-    category: "Supplements",
-    price: 39.99,
-    rating: 4.4,
-    reviews: [
-      {
-        id: 1,
-        user: "Ryan Thompson",
-        avatar: "/placeholder.svg?height=40&width=40",
-        rating: 5,
-        date: "2023-10-30",
-        comment: "Gives me incredible energy without the crash. Blue raspberry flavor is amazing!",
-      },
-      {
-        id: 2,
-        user: "Natalie Garcia",
-        avatar: "/placeholder.svg?height=40&width=40",
-        rating: 4,
-        date: "2023-10-05",
-        comment: "Good energy boost but a bit too sweet for my taste.",
-      },
-    ],
-    reviewCount: 78,
-    image: "/placeholder.svg?height=200&width=200",
-    description: "Energy-boosting pre-workout formula with caffeine and B-vitamins.",
-    details: {
-      servingSize: "1 scoop (7g)",
-      servingsPerContainer: 30,
-      caffeine: "200mg per serving",
-      flavors: ["Blue Raspberry", "Fruit Punch", "Watermelon"],
-      ingredients: "Caffeine Anhydrous, Beta-Alanine, Creatine Monohydrate, L-Citrulline, B-Vitamins",
-    },
-    images: [
-      "/placeholder.svg?height=400&width=400",
-      "/placeholder.svg?height=400&width=400",
-      "/placeholder.svg?height=400&width=400",
-    ],
-  },
-  {
-    id: 6,
-    name: "Yoga Mat",
-    category: "Equipment",
-    price: 34.99,
-    rating: 4.9,
-    reviews: [
-      {
-        id: 1,
-        user: "Emily Johnson",
-        avatar: "/placeholder.svg?height=40&width=40",
-        rating: 5,
-        date: "2023-11-15",
-        comment: "Perfect thickness and grip. Makes my yoga practice so much more comfortable.",
-      },
-      {
-        id: 2,
-        user: "Michael Brown",
-        avatar: "/placeholder.svg?height=40&width=40",
-        rating: 5,
-        date: "2023-10-20",
-        comment: "High quality mat that doesn't slip. Worth every penny!",
-      },
-    ],
-    reviewCount: 112,
-    image: "/placeholder.svg?height=200&width=200",
-    description: "Non-slip, eco-friendly yoga mat with perfect cushioning.",
-    details: {
-      thickness: "6mm",
-      material: "TPE Eco-friendly foam",
-      dimensions: '72" x 24" (183cm x 61cm)',
-      weight: "2.5 lbs (1.1 kg)",
-      colors: ["Purple", "Blue", "Black", "Green"],
-    },
-    images: [
-      "/placeholder.svg?height=400&width=400",
-      "/placeholder.svg?height=400&width=400",
-      "/placeholder.svg?height=400&width=400",
-    ],
-  },
-]
+// Configure axios defaults
+axios.defaults.withCredentials = true;
+axios.defaults.headers.common['Content-Type'] = 'application/json';
 
+// Create an axios instance with base URL
+const api = axios.create({
+  baseURL: 'http://localhost:5000',
+  timeout: 5000,
+  withCredentials: true,
+});
+
+// Initial empty products array
 const categories = [
   { id: "all", name: "All Products" },
   { id: "supplements", name: "Supplements" },
@@ -273,6 +42,7 @@ const categories = [
 
 export function Marketplace() {
   const [selectedCategory, setSelectedCategory] = useState("all")
+  const [sortOption, setSortOption] = useState("featured")
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedProduct, setSelectedProduct] = useState(null)
   const [quantity, setQuantity] = useState(1)
@@ -280,17 +50,342 @@ export function Marketplace() {
   const [newReview, setNewReview] = useState({ rating: 5, comment: "" })
   const [cart, setCart] = useState([])
   const [wishlist, setWishlist] = useState([])
+  const [products, setProducts] = useState([])
+  const [categories, setCategories] = useState([
+    { category_id: "all", name: "All Products" }
+  ])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+
+  // Fetch categories from the database
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await api.get("/marketplace/api/categories");
+        console.log("Categories response:", response.data);
+        
+        if (Array.isArray(response.data) && response.data.length > 0) {
+          // Add "All Products" as the first option
+          setCategories([
+            { category_id: "all", name: "All Products" },
+            ...response.data
+          ]);
+        }
+      } catch (err) {
+        console.error("Error fetching categories:", err);
+        // Keep the default "All Products" category if there's an error
+      }
+    };
+    
+    fetchCategories();
+  }, []);
+
+  // Fetch products based on selected category and sort option
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        setLoading(true);
+        console.log(`Fetching products for category: ${selectedCategory}, sort: ${sortOption}`);
+        
+        // Use the new sort endpoint with category as a query parameter
+        const response = await api.get(`/marketplace/api/products/sort/${sortOption}?category=${selectedCategory}`);
+
+        if (!Array.isArray(response.data)) {
+          console.error("Invalid response format:", response.data);
+          throw new Error("Invalid response format");
+        }
+
+        console.log(`Fetched ${response.data.length} products`);
+
+        const formattedProducts = response.data.map(product => ({
+          id: product.product_id,
+          name: product.name,
+          description: product.description,
+          category: product.category_id.toString(),
+          price: parseFloat(product.price) || 0,
+          sale_price: product.sale_price ? parseFloat(product.sale_price) : null,
+          stock: product.stock_quantity,
+          sku: product.sku,
+          image: product.image_url,
+          images: product.image_url ? [product.image_url] : [],
+          rating: parseFloat(product.rating) || 0,
+          reviewCount: parseInt(product.rating_count) || 0,
+          reviews: [],
+          details: {
+            sku: product.sku,
+            stock: product.stock_quantity
+          }
+        }));
+
+        setProducts(formattedProducts);
+        setError(null);
+      } catch (err) {
+        console.error("Error fetching products:", err);
+        setError(`Error: ${err.message}`);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, [selectedCategory, sortOption]);
+
+  // Update the category filter handler
+  const handleCategoryChange = (categoryId) => {
+    setSelectedCategory(categoryId);
+    setSearchQuery(""); // Clear search when changing category
+  };
+
+  // Add sort option handler
+  const handleSortChange = (option) => {
+    setSortOption(option);
+  };
+
+  // Debounced search function
+  const debouncedSearch = useCallback((query) => {
+    const timeoutId = setTimeout(async () => {
+      if (!query.trim()) {
+        // If search is empty, fetch all products
+        try {
+          setLoading(true);
+          console.log("Fetching all products (from search)");
+
+          const response = await api.get("/marketplace/api/products");
+
+          if (!Array.isArray(response.data)) {
+            console.error("Invalid response format:", response.data);
+            throw new Error("Invalid response format");
+          }
+
+          console.log(`Fetched ${response.data.length} products`);
+
+          const formattedProducts = response.data.map(product => ({
+            id: product.product_id,
+            name: product.name,
+            description: product.description,
+            category: product.category_id.toString(),
+            price: parseFloat(product.price) || 0,
+            sale_price: product.sale_price ? parseFloat(product.sale_price) : null,
+            stock: product.stock_quantity,
+            sku: product.sku,
+            image: product.image_url,
+            images: product.image_url ? [product.image_url] : [],
+            rating: 0,
+            reviewCount: 0,
+            reviews: [],
+            details: {
+              sku: product.sku,
+              stock: product.stock_quantity
+            }
+          }));
+
+          setProducts(formattedProducts);
+          setError(null);
+        } catch (err) {
+          console.error("Error fetching products:", err);
+
+          if (err.response) {
+            console.error("Response data:", err.response.data);
+            console.error("Response status:", err.response.status);
+            setError(`Fetch error: ${err.response.status} - ${err.response.data.message || 'Unknown error'}`);
+          } else if (err.request) {
+            console.error("Request made but no response received");
+            setError("No response from server. Please check your connection.");
+          } else {
+            console.error("Error message:", err.message);
+            setError(`Error: ${err.message}`);
+          }
+        } finally {
+          setLoading(false);
+        }
+        return;
+      }
+
+      try {
+        setLoading(true);
+        console.log(`Searching for products with query: "${query}"`);
+
+        const response = await api.get(`/marketplace/api/products/search?q=${encodeURIComponent(query)}`);
+
+        if (!Array.isArray(response.data)) {
+          console.error("Invalid response format:", response.data);
+          throw new Error("Invalid response format");
+        }
+
+        console.log(`Found ${response.data.length} products matching "${query}"`);
+
+        const formattedProducts = response.data.map(product => ({
+          id: product.product_id,
+          name: product.name,
+          description: product.description,
+          category: product.category_id.toString(),
+          price: parseFloat(product.price) || 0,
+          sale_price: product.sale_price ? parseFloat(product.sale_price) : null,
+          stock: product.stock_quantity,
+          sku: product.sku,
+          image: product.image_url,
+          images: product.image_url ? [product.image_url] : [],
+          rating: 0,
+          reviewCount: 0,
+          reviews: [],
+          details: {
+            sku: product.sku,
+            stock: product.stock_quantity
+          }
+        }));
+
+        setProducts(formattedProducts);
+        setError(null);
+      } catch (err) {
+        console.error("Error searching products:", err);
+
+        // More detailed error logging
+        if (err.response) {
+          console.error("Response data:", err.response.data);
+          console.error("Response status:", err.response.status);
+          setError(`Search error: ${err.response.status} - ${err.response.data.message || 'Unknown error'}`);
+        } else if (err.request) {
+          console.error("Request made but no response received");
+          setError("No response from server. Please check your connection.");
+        } else {
+          console.error("Error message:", err.message);
+          setError(`Error: ${err.message}`);
+        }
+      } finally {
+        setLoading(false);
+      }
+    }, 300); // 300ms debounce delay
+
+    return () => clearTimeout(timeoutId);
+  }, []);
+
+  // Update search handler
+  const handleSearchChange = (e) => {
+    const query = e.target.value;
+    setSearchQuery(query);
+    debouncedSearch(query);
+  };
+
+  // Check server availability and fetch products
+  useEffect(() => {
+    const checkServerAndFetchProducts = async () => {
+      try {
+        // First check if the server is available
+        await api.get('/marketplace/test');
+        console.log('Server is available');
+
+        // Then fetch products directly
+        setLoading(true);
+        console.log("Fetching all products (initial load)");
+
+        const response = await api.get("/marketplace/api/products");
+
+        if (!Array.isArray(response.data)) {
+          console.error("Invalid response format:", response.data);
+          throw new Error("Invalid response format");
+        }
+
+        console.log(`Fetched ${response.data.length} products`);
+
+        const formattedProducts = response.data.map(product => ({
+          id: product.product_id,
+          name: product.name,
+          description: product.description,
+          category: product.category_id.toString(),
+          price: parseFloat(product.price) || 0,
+          sale_price: product.sale_price ? parseFloat(product.sale_price) : null,
+          stock: product.stock_quantity,
+          sku: product.sku,
+          image: product.image_url,
+          images: product.image_url ? [product.image_url] : [],
+          rating: 0,
+          reviewCount: 0,
+          reviews: [],
+          details: {
+            sku: product.sku,
+            stock: product.stock_quantity
+          }
+        }));
+
+        setProducts(formattedProducts);
+        setError(null);
+        setLoading(false);
+      } catch (err) {
+        console.error('Server check or fetch failed:', err);
+        if (err.response) {
+          console.error("Response data:", err.response.data);
+          console.error("Response status:", err.response.status);
+          setError(`Error: ${err.response.status} - ${err.response.data.message || 'Unknown error'}`);
+        } else if (err.request) {
+          console.error("Request made but no response received");
+          setError('Server is not available. Please make sure the server is running.');
+        } else {
+          console.error("Error message:", err.message);
+          setError(`Error: ${err.message}`);
+        }
+        setLoading(false);
+      }
+    };
+
+    checkServerAndFetchProducts();
+  }, []);
 
   const filteredProducts = products.filter((product) => {
-    const matchesCategory =
-      selectedCategory === "all" || product.category.toLowerCase() === selectedCategory.toLowerCase()
+    // We don't need to filter by category here anymore since we're fetching by category
+    // Just filter by search query
     const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase())
-    return matchesCategory && matchesSearch
+    return matchesSearch
   })
 
-  const handleProductClick = (product) => {
-    setSelectedProduct(product)
-    setQuantity(1)
+  // Fetch product details when a product is clicked
+  const handleProductClick = async (product) => {
+    try {
+      // First set the product from our list to show something immediately
+      setSelectedProduct({
+        ...product,
+        rating: 0,
+        reviewCount: 0
+      });
+      setQuantity(1);
+
+      // Then fetch the latest product details from the server
+      const response = await api.get(`/marketplace/api/products/${product.id}`);
+      
+      console.log("Product API response:", response.data);
+      
+      // Format the product data - make sure we're using the correct property names from the API
+      const formattedProduct = {
+        id: response.data.product_id,
+        name: response.data.name,
+        description: response.data.description,
+        category: response.data.category_id ? response.data.category_id.toString() : "",
+        price: parseFloat(response.data.price) || 0,
+        sale_price: response.data.sale_price ? parseFloat(response.data.sale_price) : null,
+        stock: response.data.stock_quantity,
+        sku: response.data.sku,
+        image: response.data.image_url,
+        images: response.data.image_url ? [response.data.image_url] : [],
+        // Make sure we're using the exact property names from the API response
+        rating: parseFloat(response.data.rating) || 0,
+        reviewCount: parseInt(response.data.rating_count) || 0,
+        reviews: product.reviews || [], // Keep existing reviews
+        details: {
+          sku: response.data.sku,
+          stock: response.data.stock_quantity
+        }
+      };
+      
+      console.log("Formatted product with ratings:", {
+        rating: formattedProduct.rating,
+        reviewCount: formattedProduct.reviewCount
+      });
+
+      // Update the selected product with the latest data
+      setSelectedProduct(formattedProduct);
+
+    } catch (err) {
+      console.error("Error fetching product details:", err);
+    }
   }
 
   const handleCloseDialog = () => {
@@ -331,10 +426,8 @@ export function Marketplace() {
     }
 
     // Update the product in the products array
-    const updatedProducts = products.map((p) => (p.id === selectedProduct.id ? updatedProduct : p))
-
-    // In a real app, this would send the review to the database
-    // For now, we'll just update the local state
+    // In a real app, this would send the review to the database and update all products
+    // For now, we'll just update the local state for the selected product
     setSelectedProduct(updatedProduct)
 
     // Reset the review form
@@ -388,11 +481,17 @@ export function Marketplace() {
   }
 
   const renderStars = (rating) => {
+    const ratingValue = parseFloat(rating) || 0;
+    console.log("Rendering stars for rating:", ratingValue);
+    
     return Array(5)
       .fill(0)
       .map((_, i) => (
-        <Star key={i} className={`h-4 w-4 ${i < Math.floor(rating) ? "text-primary fill-primary" : "text-gray-300"}`} />
-      ))
+        <Star 
+          key={i} 
+          className={`h-4 w-4 ${i < Math.round(ratingValue) ? "text-primary fill-primary" : "text-gray-300"}`} 
+        />
+      ));
   }
 
   return (
@@ -409,23 +508,23 @@ export function Marketplace() {
             placeholder="Search products..."
             className="pl-8"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={handleSearchChange}
           />
         </div>
         <div className="flex flex-wrap gap-2 w-full md:w-auto">
-          <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+          <Select value={selectedCategory} onValueChange={handleCategoryChange}>
             <SelectTrigger className="w-full md:w-[180px]">
               <SelectValue placeholder="Category" />
             </SelectTrigger>
             <SelectContent>
               {categories.map((category) => (
-                <SelectItem key={category.id} value={category.id}>
+                <SelectItem key={category.category_id} value={category.category_id.toString()}>
                   {category.name}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
-          <Select defaultValue="featured">
+          <Select value={sortOption} onValueChange={handleSortChange}>
             <SelectTrigger className="w-full md:w-[180px]">
               <SelectValue placeholder="Sort by" />
             </SelectTrigger>
@@ -434,66 +533,85 @@ export function Marketplace() {
               <SelectItem value="price-low">Price: Low to High</SelectItem>
               <SelectItem value="price-high">Price: High to Low</SelectItem>
               <SelectItem value="rating">Highest Rated</SelectItem>
-              <SelectItem value="newest">Newest</SelectItem>
             </SelectContent>
           </Select>
         </div>
       </div>
 
-      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-        {filteredProducts.map((product) => (
-          <Card key={product.id} className="product-card max-w-none w-full">
-            <div className="aspect-square relative">
-              <img
-                src={product.image || "/placeholder.svg"}
-                alt={product.name}
-                className="object-cover w-full h-full"
-                onClick={() => handleProductClick(product)}
-              />
-              <Badge className="absolute top-2 right-2">{product.category}</Badge>
-              <Button
-                size="icon"
-                className="absolute bottom-2 right-2 h-8 w-8 rounded-full"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  addToCart(product)
-                }}
-              >
-                <ShoppingCart className="h-4 w-4" />
-              </Button>
-              <Button
-                size="icon"
-                className="absolute bottom-2 left-2 h-8 w-8 rounded-full"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  toggleWishlist(product)
-                }}
-              >
-                <Heart
-                  className={`h-4 w-4 ${wishlist.some((item) => item.id === product.id) ? "fill-primary text-primary" : ""}`}
-                />
-              </Button>
-            </div>
-            <div className="p-4">
-              <h3
-                className="font-medium text-base line-clamp-1 cursor-pointer"
-                onClick={() => handleProductClick(product)}
-              >
-                {product.name}
-              </h3>
-              <div className="flex items-center justify-between mt-2">
-                <div className="flex items-center gap-1">
-                  <div className="flex">{renderStars(product.rating)}</div>
-                  <span className="text-xs text-muted-foreground">{product.rating}</span>
-                </div>
-                <span className="font-medium">${product.price.toFixed(2)}</span>
-              </div>
-            </div>
-          </Card>
-        ))}
-      </div>
+      {/* Loading state */}
+      {loading && (
+        <div className="flex flex-col items-center justify-center py-12">
+          <p className="text-lg font-medium">Loading products...</p>
+          <p className="text-muted-foreground">Please wait while we fetch the products</p>
+        </div>
+      )}
 
-      {filteredProducts.length === 0 && (
+      {/* Error state */}
+      {error && (
+        <div className="flex flex-col items-center justify-center py-12 text-red-500">
+          <p className="text-lg font-medium">Error</p>
+          <p>{error}</p>
+        </div>
+      )}
+
+      {/* Products grid */}
+      {!loading && !error && (
+        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+          {filteredProducts.map((product) => (
+            <Card key={product.id} className="product-card max-w-none w-full">
+              <div className="aspect-square relative">
+                <img
+                  src={product.image || "/placeholder.svg"}
+                  alt={product.name}
+                  className="object-cover w-full h-full"
+                  onClick={() => handleProductClick(product)}
+                />
+                <Badge className="absolute top-2 right-2">{product.category}</Badge>
+                <Button
+                  size="icon"
+                  className="absolute bottom-2 right-2 h-8 w-8 rounded-full"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    addToCart(product)
+                  }}
+                >
+                  <ShoppingCart className="h-4 w-4" />
+                </Button>
+                <Button
+                  size="icon"
+                  className="absolute bottom-2 left-2 h-8 w-8 rounded-full"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    toggleWishlist(product)
+                  }}
+                >
+                  <Heart
+                    className={`h-4 w-4 ${wishlist.some((item) => item.id === product.id) ? "fill-primary text-primary" : ""}`}
+                  />
+                </Button>
+              </div>
+              <div className="p-4">
+                <h3
+                  className="font-medium text-base line-clamp-1 cursor-pointer"
+                  onClick={() => handleProductClick(product)}
+                >
+                  {product.name}
+                </h3>
+                <div className="flex items-center justify-between mt-2">
+                  <div className="flex items-center gap-1">
+                    <div className="flex">{renderStars(product.rating)}</div>
+                    <span className="text-xs text-muted-foreground">{product.rating}</span>
+                  </div>
+                  <span className="font-medium">${typeof product.price === 'number' ? product.price.toFixed(2) : '0.00'}</span>
+                </div>
+              </div>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {/* No products found */}
+      {!loading && !error && filteredProducts.length === 0 && (
         <div className="flex flex-col items-center justify-center py-12">
           <p className="text-lg font-medium">No products found</p>
           <p className="text-muted-foreground">Try adjusting your search or filter criteria</p>
@@ -549,14 +667,18 @@ export function Marketplace() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <div className="flex">{renderStars(selectedProduct.rating)}</div>
-                      <span className="text-sm font-medium">{selectedProduct.rating}</span>
+                      <span className="text-sm font-medium">
+                        {selectedProduct.rating ? selectedProduct.rating.toFixed(1) : '0.0'}
+                      </span>
                     </div>
-                    <span className="text-sm text-muted-foreground">{selectedProduct.reviewCount} reviews</span>
+                    <span className="text-sm text-muted-foreground">
+                      {selectedProduct.reviewCount || 0} reviews
+                    </span>
                   </div>
                 </div>
                 <div className="pt-4 border-t">
                   <div className="flex items-center justify-between mb-4">
-                    <span className="text-2xl font-bold">${selectedProduct.price.toFixed(2)}</span>
+                    <span className="text-2xl font-bold">${typeof selectedProduct.price === 'number' ? selectedProduct.price.toFixed(2) : '0.00'}</span>
                     <div className="flex items-center border rounded-md">
                       <Button variant="ghost" size="icon" onClick={decrementQuantity} disabled={quantity <= 1}>
                         <Minus className="h-4 w-4" />
@@ -609,7 +731,7 @@ export function Marketplace() {
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-semibold">Reviews</h3>
                 <Button size="sm" onClick={() => setReviewDialogOpen(true)}>
-                  Add Review
+                  Add Rating
                 </Button>
               </div>
               <div className="space-y-4">
@@ -687,3 +809,24 @@ export function Marketplace() {
     </div>
   )
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

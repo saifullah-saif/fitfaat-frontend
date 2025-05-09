@@ -68,6 +68,7 @@ export function AuthProvider({ children }) {
       pathname !== "/login" &&
       pathname !== "/signup" &&
       pathname !== "/" && // Allow access to home page without auth
+      pathname !== "/marketplace" && // Allow access to marketplace without auth
       !pathname.includes("/auth")
     ) {
       router.push("/login")

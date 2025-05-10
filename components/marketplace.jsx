@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/dialog"
 import { toast } from "@/hooks/use-toast"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { useAuth } from "@/components/auth-provider";
 
 // Configure axios defaults
 axios.defaults.withCredentials = true;
@@ -41,6 +42,7 @@ const categories = [
 ]
 
 export function Marketplace() {
+  const { user } = useAuth();
   const [selectedCategory, setSelectedCategory] = useState("all")
   const [sortOption, setSortOption] = useState("featured")
   const [searchQuery, setSearchQuery] = useState("")
@@ -48,7 +50,7 @@ export function Marketplace() {
   const [quantity, setQuantity] = useState(1)
   const [reviewDialogOpen, setReviewDialogOpen] = useState(false)
   const [newReview, setNewReview] = useState({ rating: 5, comment: "" })
-  const [cart, setCart] = useState([])
+  const [cart, setCart] = useState([]) // Initialize cart state but don't display it in the UI
   const [wishlist, setWishlist] = useState([])
   const [products, setProducts] = useState([])
   const [categories, setCategories] = useState([
@@ -440,27 +442,86 @@ export function Marketplace() {
     })
   }
 
-  const addToCart = (product, qty = 1) => {
-    if (!product) return
+  const addToCart = async (product, qty = 1) => {
+    if (!product) return;
 
-    const existingItem = cart.find((item) => item.id === product.id)
+    try {
+      // Check if user is logged in
+      if (!user) {
+        toast({
+          title: "Please log in",
+          description: "You need to be logged in to add items to your cart",
+          variant: "destructive",
+        });
+        return;
+      }
 
-    if (existingItem) {
-      // Update quantity if product already exists in cart
-      setCart(cart.map((item) => (item.id === product.id ? { ...item, quantity: item.quantity + qty } : item)))
-    } else {
-      // Add new product to cart
-      setCart([...cart, { ...product, quantity: qty }])
-    }
+      console.log("Adding to cart:", { 
+        productId: product.id, 
+        quantity: qty,
+        user: user ? `ID: ${user.id || user.user_id || 'unknown'}` : 'not logged in'
+      });
 
-    // Optional: Log the cart for debugging
-    console.log("Cart updated:", [...cart, { ...product, quantity: qty }])
+      // Call the API to add the product to the cart
+      const response = await api.post("/cart/add", {
+        productId: product.id,
+        quantity: qty,
+      });
 
-    if (selectedProduct) {
+      console.log("Add to cart response:", response.data);
+
+      // Update local cart state
+      const existingItem = cart.find((item) => item.id === product.id);
+
+      if (existingItem) {
+        // Update quantity if product already exists in cart
+        setCart(cart.map((item) => (item.id === product.id ? { ...item, quantity: item.quantity + qty } : item)));
+      } else {
+        // Add new product to cart
+        setCart([...cart, { ...product, quantity: qty }]);
+      }
+
+      // Show success toast
+      toast({
+        title: "Added to cart",
+        description: `${qty} × ${product.name} added to your cart`,
+        action: (
+          <div className="flex items-center gap-2">
+            <Button size="sm" variant="outline" asChild>
+              <a href="/checkout">View Cart</a>
+            </Button>
+          </div>
+        ),
+      });
+
       // Close the product dialog after adding to cart
-      setTimeout(() => setSelectedProduct(null), 500)
+      if (selectedProduct) {
+        setTimeout(() => setSelectedProduct(null), 500);
+      }
+    } catch (err) {
+      console.error("Error adding to cart:", err);
+      
+      // Show error toast
+      let errorMessage = "Failed to add item to cart";
+      
+      if (err.response) {
+        console.error("Error response:", err.response.data);
+        if (err.response.status === 400 && err.response.data.message === "Not enough stock") {
+          errorMessage = `Only ${err.response.data.available} items available`;
+        } else if (err.response.status === 401) {
+          errorMessage = "Please log in to add items to your cart";
+        } else {
+          errorMessage = err.response.data.message || errorMessage;
+        }
+      }
+      
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
     }
-  }
+  };
 
   const toggleWishlist = (product) => {
     const isInWishlist = wishlist.some((item) => item.id === product.id)
@@ -493,6 +554,97 @@ export function Marketplace() {
         />
       ));
   }
+
+  // Fetch cart on component mount
+  useEffect(() => {
+    const fetchCart = async () => {
+      if (!user) return;
+      
+      try {
+        console.log("Fetching cart for user:", user);
+        const response = await api.get("/cart");
+        
+        console.log("Cart response:", response.data);
+        
+        if (response.data && Array.isArray(response.data.items)) {
+          // Format cart items to match our local state format
+          const formattedItems = response.data.items.map(item => ({
+            id: item.product_id,
+            name: item.name,
+            price: item.price,
+            quantity: item.quantity,
+            image: item.image || item.image_url,
+          }));
+          
+          setCart(formattedItems);
+        }
+      } catch (err) {
+        console.error("Error fetching cart:", err);
+        if (err.response && err.response.status === 401) {
+          console.log("User not authenticated for cart fetch");
+        }
+      }
+    };
+    
+    fetchCart();
+  }, [user]);
+
+  // Add a function to update cart item quantity
+  const updateCartItemQuantity = async (itemId, newQuantity) => {
+    try {
+      if (newQuantity < 1) return;
+      
+      const response = await api.put(`/cart/update/${itemId}`, { quantity: newQuantity });
+      console.log("Update cart response:", response.data);
+      
+      // Update local cart state
+      setCart(cart.map(item => 
+        item.id === itemId ? { ...item, quantity: newQuantity } : item
+      ));
+      
+      toast({
+        title: "Cart updated",
+        description: "Item quantity updated successfully",
+      });
+    } catch (err) {
+      console.error("Error updating cart item:", err);
+      
+      let errorMessage = "Failed to update item";
+      if (err.response && err.response.status === 400 && err.response.data.message === "Not enough stock") {
+        errorMessage = `Only ${err.response.data.available} items available`;
+      }
+      
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Add a function to remove item from cart
+  const removeCartItem = async (itemId) => {
+    try {
+      const response = await api.delete(`/cart/remove/${itemId}`);
+      console.log("Remove from cart response:", response.data);
+      
+      // Update local cart state
+      setCart(cart.filter(item => item.id !== itemId));
+      
+      toast({
+        title: "Item removed",
+        description: "Item removed from your cart",
+      });
+    } catch (err) {
+      console.error("Error removing cart item:", err);
+      
+      toast({
+        title: "Error",
+        description: "Failed to remove item from cart",
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <div className="flex flex-col gap-6 p-4 md:p-8 max-w-6xl mx-auto w-full">
@@ -695,7 +847,7 @@ export function Marketplace() {
                       onClick={() => {
                         // Add the product to the cart
                         addToCart(selectedProduct, quantity)
-
+                        window.location.reload();
                         // Show visual feedback
                         toast({
                           title: "Added to cart",
@@ -809,6 +961,14 @@ export function Marketplace() {
     </div>
   )
 }
+
+
+
+
+
+
+
+
 
 
 

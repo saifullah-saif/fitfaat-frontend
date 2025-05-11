@@ -55,7 +55,11 @@ export const CartContext = createContext({
   isLoading: false,
   cartTotal: 0,
   orders: [],
-  setOrders: () => {}
+  setOrders: () => {},
+  wishlist: [],
+  removeFromWishlist: () => {},
+  refreshWishlist: () => {},
+  addToCart: () => {}
 });
 
 // Custom hook to use cart context
@@ -139,6 +143,31 @@ export function Navbar() {
     }
   }, [isAuthenticated]); // Only depend on isAuthenticated, not user
 
+  // Function to fetch user wishlist
+  const fetchWishlist = useCallback(async () => {
+    if (!isAuthenticated) {
+      setWishlist([]);
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      
+      const response = await api.get("/marketplace/wishlist");
+      
+      if (response.data && Array.isArray(response.data.items)) {
+        setWishlist(response.data.items);
+      } else {
+        setWishlist([]);
+      }
+    } catch (err) {
+      console.error("Error fetching wishlist:", err);
+      setWishlist([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [isAuthenticated]); // Only depend on isAuthenticated, not user
+
   // Calculate cart total whenever cart changes
   const cartTotal = useMemo(() => {
     return cart.reduce((total, item) => total + (item.price * item.quantity), 0);
@@ -149,7 +178,20 @@ export function Navbar() {
     fetchCart();
   }, [fetchCart]);
 
-  
+  // Add a refreshWishlist function that calls fetchWishlist
+  const refreshWishlist = useCallback(() => {
+    fetchWishlist();
+  }, [fetchWishlist]);
+
+  // Function to remove item from wishlist
+  const removeFromWishlist = async (itemId) => {
+    try {
+      await api.delete(`/marketplace/wishlist/remove/${itemId}`);
+      fetchWishlist(); // Refresh wishlist after removing item
+    } catch (err) {
+      console.error("Error removing item from wishlist:", err);
+    }
+  };
 
   // Handle hydration mismatch by only rendering client-side
   useEffect(() => {
@@ -158,22 +200,6 @@ export function Navbar() {
     // Check theme
     const savedTheme = localStorage.getItem("theme") || "dark"
     setTheme(savedTheme)
-
-    // Mock wishlist data - in a real app, this would come from state management
-    setWishlist([
-      {
-        id: 3,
-        name: "Fitness Tracker Watch",
-        price: 129.99,
-        image: "/placeholder.svg?height=80&width=80",
-      },
-      {
-        id: 6,
-        name: "Yoga Mat",
-        price: 34.99,
-        image: "/placeholder.svg?height=80&width=80",
-      },
-    ])
   }, [])
 
   // Fetch cart and orders when component mounts or when authentication changes
@@ -181,11 +207,13 @@ export function Navbar() {
     if (isAuthenticated) {
       fetchCart();
       fetchUserOrders();
+      fetchWishlist();
     } else {
       setCart([]);
       setOrders([]);
+      setWishlist([]);
     }
-  }, [isAuthenticated, fetchCart, fetchUserOrders]);
+  }, [isAuthenticated, fetchCart, fetchUserOrders, fetchWishlist]);
 
   // Add a useEffect to refresh orders after checkout
   useEffect(() => {
@@ -217,6 +245,45 @@ export function Navbar() {
     }
   }
 
+  // Function to add item to cart that calls the API
+  const addToCart = async (product, qty = 1) => {
+    if (!product) return;
+    
+    try {
+      // Call the API to add the product to the cart
+      console.log("Adding to cart:", { 
+        productId: product.product_id, 
+        quantity: qty 
+      });
+      
+      const response = await api.post("/cart/add", {
+        productId: product.product_id,
+        quantity: qty,
+      });
+      
+      console.log("Add to cart response:", response.data);
+      
+      // Update local cart state
+      const existingItem = cart.find((item) => item.id === product.id);
+      
+      if (existingItem) {
+        // Update quantity if product already exists in cart
+        setCart(cart.map((item) => 
+          item.id === product.id ? { ...item, quantity: item.quantity + qty } : item
+        ));
+      } else {
+        // Add new product to cart
+        setCart([...cart, { ...product, quantity: qty }]);
+      }
+      
+      // Refresh the cart to ensure consistency with the server
+      fetchCart();
+      
+    } catch (err) {
+      console.error("Error adding item to cart:", err);
+    }
+  };
+
   // Only wait for client-side mounting to avoid hydration issues
   if (!mounted) return null
 
@@ -229,8 +296,10 @@ export function Navbar() {
     cartTotal,
     orders,
     setOrders,
-    isOrdersOpen,
-    setIsOrdersOpen
+    wishlist,
+    removeFromWishlist,
+    refreshWishlist,
+    addToCart
   };
   
   return (
@@ -579,19 +648,15 @@ export function Navbar() {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => {
-                              // Add to cart functionality
-                              const existingItem = cart.find((cartItem) => cartItem.id === item.id)
-                              if (existingItem) {
-                                setCart(
-                                  cart.map((cartItem) =>
-                                    cartItem.id === item.id ? { ...cartItem, quantity: cartItem.quantity + 1 } : cartItem,
-                                  ),
-                                )
-                              } else {
-                                setCart([...cart, { ...item, quantity: 1 }])
+                            onClick={async () => {
+                              // Add to cart functionality and then remove from wishlist
+                              try {
+                                await addToCart(item);
+                                await removeFromWishlist(item.id);
+                                window.location.reload();
+                              } catch (err) {
+                                console.error("Error processing wishlist item:", err);
                               }
-                              // Show toast or notification
                             }}
                           >
                             <ShoppingCart className="h-4 w-4" />
@@ -601,7 +666,7 @@ export function Navbar() {
                             size="sm"
                             onClick={() => {
                               // Remove from wishlist
-                              setWishlist(wishlist.filter((wishItem) => wishItem.id !== item.id))
+                              removeFromWishlist(item.id);
                             }}
                           >
                             <X className="h-4 w-4" />
@@ -615,20 +680,26 @@ export function Navbar() {
                   <div className="flex gap-2">
                     <Button
                       className="flex-1"
-                      onClick={() => {
-                        // Add all items to cart
-                        const newCart = [...cart]
-                        wishlist.forEach((item) => {
-                          const existingItem = newCart.find((cartItem) => cartItem.id === item.id)
-                          if (existingItem) {
-                            existingItem.quantity += 1
-                          } else {
-                            newCart.push({ ...item, quantity: 1 })
+                      onClick={async () => {
+                        // Add all items to cart using API
+                        try {
+                          // Process items one by one to ensure they're all added
+                          await Promise.all(
+                            wishlist.map(item => addToCart(item, 1))
+                          );
+                          
+                          // Clear wishlist after adding all items to cart
+                          if (wishlist.length > 0) {
+                            await Promise.all(wishlist.map(item => removeFromWishlist(item.id)));
                           }
-                        })
-                        setCart(newCart)
-                        setIsWishlistOpen(false)
-                        setIsCartOpen(true)
+                          
+                          // Close wishlist and open cart sheet
+                          window.location.reload();
+                          setIsWishlistOpen(false);
+                          setIsCartOpen(true);
+                        } catch (err) {
+                          console.error("Error adding all items to cart:", err);
+                        }
                       }}
                     >
                       Add All to Cart
@@ -636,8 +707,16 @@ export function Navbar() {
                     <Button
                       variant="outline"
                       onClick={() => {
-                        // Clear wishlist
-                        setWishlist([])
+                        // Clear wishlist by removing each item
+                        if (wishlist.length > 0) {
+                          Promise.all(wishlist.map(item => removeFromWishlist(item.id)))
+                            .then(() => {
+                              console.log("Wishlist cleared successfully");
+                            })
+                            .catch(err => {
+                              console.error("Error clearing wishlist:", err);
+                            });
+                        }
                       }}
                     >
                       Clear Wishlist
@@ -743,6 +822,8 @@ export function Navbar() {
     </CartContext.Provider>
   )
 }
+
+
 
 
 

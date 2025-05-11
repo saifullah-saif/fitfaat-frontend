@@ -1,12 +1,226 @@
 const express = require("express");
 const router = express.Router();
 const db = require("../db");
+const { verifyToken } = require("../middleware/authMiddleware");
 //const marketplace = require("../marketplace.js");
 
 // Health check route
 router.get("/test", (req, res) => {
   res.json({ message: "Marketplace API is working" });
 });
+
+// Get user's wishlist items
+router.get("/wishlist", verifyToken, (req, res) => {
+  const userId = req.user.id || req.user.user_id;
+  
+  if (!userId) {
+    console.error("User ID missing from token. User object:", req.user);
+    return res.status(401).json({ message: "Authentication error: User ID missing" });
+  }
+  
+  fetchWishlist(userId, res);
+});
+
+// Add item to wishlist
+router.post("/wishlist/add", verifyToken, (req, res) => {
+  const userId = req.user.id || req.user.user_id;
+  
+  if (!userId) {
+    console.error("User ID missing from token. User object:", req.user);
+    return res.status(401).json({ message: "Authentication error: User ID missing" });
+  }
+  
+  const { productId } = req.body;
+  
+  if (!productId) {
+    return res.status(400).json({ message: "Product ID is required" });
+  }
+  
+  processAddToWishlist(userId, productId, res);
+});
+
+// Remove item from wishlist
+router.delete("/wishlist/remove/:itemId", verifyToken, (req, res) => {
+  const userId = req.user.id || req.user.user_id;
+  
+  if (!userId) {
+    console.error("User ID missing from token. User object:", req.user);
+    return res.status(401).json({ message: "Authentication error: User ID missing" });
+  }
+  
+  const itemId = req.params.itemId;
+  
+  processRemoveWishlistItem(userId, itemId, res);
+});
+
+// Helper function to fetch user's wishlist
+function fetchWishlist(userId, res) {
+  console.log(`Fetching wishlist for user ID: ${userId}`);
+ 
+  // First, get the user's wishlist
+  db.query("SELECT wishlist_id FROM wishlists WHERE user_id = ?", [userId], (err, wishlistResults) => {
+    if (err) {
+      console.error("Error fetching wishlist:", err);
+      return res.status(500).json({ message: "Error fetching wishlist", error: err.message });
+    }
+   
+    // If no wishlist exists, return empty wishlist
+    if (!wishlistResults || wishlistResults.length === 0) {
+      return res.json({ items: [] });
+    }
+   
+    const wishlistId = wishlistResults[0].wishlist_id;
+   
+    // Get wishlist items with product details
+    const query = `
+      SELECT wi.wishlist_item_id, p.*
+      FROM wishlist_items wi
+      JOIN products p ON wi.product_id = p.product_id
+      WHERE wi.wishlist_id = ?
+    `;
+   
+    db.query(query, [wishlistId], (err, itemResults) => {
+      if (err) {
+        console.error("Error fetching wishlist items:", err);
+        return res.status(500).json({ message: "Error fetching wishlist items", error: err.message });
+      }
+     
+      // Format the wishlist items
+      const items = itemResults.map(item => ({
+        id: item.wishlist_item_id,
+        product_id: item.product_id,
+        name: item.name,
+        price: parseFloat(item.price),
+        image: item.image_url
+      }));
+     
+      res.json({ wishlistId, items });
+    });
+  });
+}
+
+// Helper function to add item to wishlist - Main processing function
+function processAddToWishlist(userId, productId, res) {
+  console.log(`Adding product ID ${productId} to wishlist for user ID: ${userId}`);
+  
+  // First, check if the product exists
+  db.query("SELECT * FROM products WHERE product_id = ?", [productId], (err, productResults) => {
+    if (err) {
+      console.error("Error checking product:", err);
+      return res.status(500).json({ message: "Error checking product", error: err.message });
+    }
+    
+    if (!productResults || productResults.length === 0) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+    
+    // Now, get or create the user's wishlist
+    db.query("SELECT wishlist_id FROM wishlists WHERE user_id = ?", [userId], (err, wishlistResults) => {
+      if (err) {
+        console.error("Error checking wishlist:", err);
+        return res.status(500).json({ message: "Error checking wishlist", error: err.message });
+      }
+      
+      let wishlistId;
+      
+      if (!wishlistResults || wishlistResults.length === 0) {
+        // Create a new wishlist
+        db.query("INSERT INTO wishlists (user_id, name) VALUES (?, 'My Wishlist')", [userId], (err, insertResult) => {
+          if (err) {
+            console.error("Error creating wishlist:", err);
+            return res.status(500).json({ message: "Error creating wishlist", error: err.message });
+          }
+          
+          wishlistId = insertResult.insertId;
+          // Call the helper function to add the item to the wishlist
+          addToWishlist(wishlistId, productId, res);
+        });
+      } else {
+        // Use existing wishlist
+        wishlistId = wishlistResults[0].wishlist_id;
+        // Call the helper function to add the item to the wishlist
+        addToWishlist(wishlistId, productId, res);
+      }
+    });
+  });
+}
+
+// Helper function to add item to wishlist - Called by processAddToWishlist after wishlist is confirmed
+function addToWishlist(wishlistId, productId, res) {
+  // Check if the product is already in the wishlist
+  db.query(
+    "SELECT * FROM wishlist_items WHERE wishlist_id = ? AND product_id = ?",
+    [wishlistId, productId],
+    (err, itemResults) => {
+      if (err) {
+        console.error("Error checking wishlist item:", err);
+        return res.status(500).json({ message: "Error checking wishlist item", error: err.message });
+      }
+      
+      if (!itemResults || itemResults.length === 0) {
+        // Add new item to wishlist
+        db.query(
+          "INSERT INTO wishlist_items (wishlist_id, product_id) VALUES (?, ?)",
+          [wishlistId, productId],
+          (err, insertResult) => {
+            if (err) {
+              console.error("Error adding item to wishlist:", err);
+              return res.status(500).json({ message: "Error adding item to wishlist", error: err.message });
+            }
+            
+            res.json({
+              message: "Item added to wishlist",
+              wishlistItemId: insertResult.insertId,
+              wishlistId,
+              productId
+            });
+          }
+        );
+      } else {
+        // Item already in wishlist
+        res.json({
+          message: "Item already in wishlist",
+          wishlistItemId: itemResults[0].wishlist_item_id,
+          wishlistId,
+          productId
+        });
+      }
+    }
+  );
+}
+
+// Helper function to remove item from wishlist
+function processRemoveWishlistItem(userId, itemId, res) {
+  console.log(`Removing item ID ${itemId} from wishlist for user ID: ${userId}`);
+  
+  // Verify the item belongs to the user's wishlist
+  const query = `
+    SELECT wi.* FROM wishlist_items wi
+    JOIN wishlists w ON wi.wishlist_id = w.wishlist_id
+    WHERE wi.wishlist_item_id = ? AND w.user_id = ?
+  `;
+  
+  db.query(query, [itemId, userId], (err, results) => {
+    if (err) {
+      console.error("Error verifying wishlist item:", err);
+      return res.status(500).json({ message: "Error verifying wishlist item", error: err.message });
+    }
+    
+    if (!results || results.length === 0) {
+      return res.status(404).json({ message: "Wishlist item not found" });
+    }
+    
+    // Remove the item
+    db.query("DELETE FROM wishlist_items WHERE wishlist_item_id = ?", [itemId], (err) => {
+      if (err) {
+        console.error("Error removing wishlist item:", err);
+        return res.status(500).json({ message: "Error removing wishlist item", error: err.message });
+      }
+      
+      res.json({ message: "Item removed from wishlist" });
+    });
+  });
+}
 
 // Product fetching route
 router.get("/api/products", (req, res) => {
@@ -45,7 +259,31 @@ router.get("/api/products/search", (req, res) => {
   console.log(`Searching for products with query: "${searchQuery}"`);
 
   if (!searchQuery) {
-    return exports.getAllProducts(req, res);
+    // If no search query, fetch all products directly
+    db.query("SELECT * FROM products", (err, results) => {
+      if (err) {
+        console.error("Error fetching products:", err);
+        return res.status(500).json({ message: "Error fetching products", error: err.message });
+      }
+
+      if (!results || results.length === 0) {
+        console.log("No products found in database");
+        return res.json([]);
+      }
+
+      console.log(`Found ${results.length} products`);
+
+      // Sanitize and process results
+      const formatted = results.map(p => ({
+        ...p,
+        price: parseFloat(p.price),
+        sale_price: p.sale_price ? parseFloat(p.sale_price) : null,
+        stock_quantity: parseInt(p.stock_quantity),
+      }));
+
+      res.json(formatted);
+    });
+    return;
   }
 
   // Use parameterized query with LIKE for partial matching

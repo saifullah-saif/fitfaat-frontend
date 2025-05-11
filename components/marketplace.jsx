@@ -20,6 +20,7 @@ import {
 import { toast } from "@/hooks/use-toast"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useAuth } from "@/components/auth-provider";
+import { useCart } from "@/components/navbar";
 
 // Configure axios defaults
 axios.defaults.withCredentials = true;
@@ -43,6 +44,7 @@ const categories = [
 
 export function Marketplace() {
   const { user } = useAuth();
+  const { refreshWishlist: refreshNavbarWishlist } = useCart();
   const [selectedCategory, setSelectedCategory] = useState("all")
   const [sortOption, setSortOption] = useState("featured")
   const [searchQuery, setSearchQuery] = useState("")
@@ -51,13 +53,66 @@ export function Marketplace() {
   const [reviewDialogOpen, setReviewDialogOpen] = useState(false)
   const [newReview, setNewReview] = useState({ rating: 5, comment: "" })
   const [cart, setCart] = useState([]) // Initialize cart state but don't display it in the UI
-  const [wishlist, setWishlist] = useState([])
   const [products, setProducts] = useState([])
   const [categories, setCategories] = useState([
     { category_id: "all", name: "All Products" }
   ])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [wishlist, setWishlist] = useState([])
+
+  // Fetch wishlist items from the server
+  const fetchWishlist = useCallback(async () => {
+    if (!user) {
+      setWishlist([]);
+      return;
+    }
+
+    try {
+      const response = await api.get("/marketplace/wishlist");
+      
+      if (response.data && Array.isArray(response.data.items)) {
+        console.log("Wishlist items from server:", response.data.items);
+        setWishlist(response.data.items);
+      } else {
+        setWishlist([]);
+      }
+    } catch (err) {
+      console.error("Error fetching wishlist:", err);
+      setWishlist([]);
+    }
+  }, [user]);
+
+  // Remove item from wishlist
+  const removeFromWishlist = async (itemId) => {
+    try {
+      await api.delete(`/marketplace/wishlist/remove/${itemId}`);
+      // Update local wishlist state - use the correct property name (id) for filtering
+      setWishlist(wishlist.filter(item => item.id !== itemId));
+      // Also refresh the navbar wishlist
+      if (refreshNavbarWishlist) refreshNavbarWishlist();
+    } catch (err) {
+      console.error("Error removing item from wishlist:", err);
+    }
+  };
+
+  // Function to add item to wishlist using the API
+  const addToWishlist = async (productId) => {
+    try {
+      await api.post("/marketplace/wishlist/add", { productId });
+      // Refresh local wishlist
+      fetchWishlist();
+      // Also refresh the navbar wishlist
+      if (refreshNavbarWishlist) refreshNavbarWishlist();
+    } catch (err) {
+      console.error("Error adding item to wishlist:", err);
+    }
+  };
+
+  // Fetch wishlist on component mount
+  useEffect(() => {
+    fetchWishlist();
+  }, [fetchWishlist]);
 
   // Fetch categories from the database
   useEffect(() => {
@@ -481,6 +536,11 @@ export function Marketplace() {
         setCart([...cart, { ...product, quantity: qty }]);
       }
 
+      // If this item was in the wishlist and we're adding it to cart from there,
+      // we might want to refresh the wishlist to keep it in sync
+      fetchWishlist();
+      if (refreshNavbarWishlist) refreshNavbarWishlist();
+
       // Show success toast
       toast({
         title: "Added to cart",
@@ -523,23 +583,52 @@ export function Marketplace() {
     }
   };
 
+  // Toggle wishlist function
   const toggleWishlist = (product) => {
-    const isInWishlist = wishlist.some((item) => item.id === product.id)
-
-    if (isInWishlist) {
-      setWishlist(wishlist.filter((item) => item.id !== product.id))
+    if (!user) {
       toast({
-        title: "Removed from wishlist",
-        description: `${product.name} removed from your wishlist`,
-      })
+        title: "Please log in",
+        description: "You need to be logged in to add items to your wishlist",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    console.log("Toggle wishlist for product:", product);
+    console.log("Current wishlist:", wishlist);
+    
+    // product.id is the product_id, but in wishlist items we have both id (wishlist_item_id) and product_id
+    const isInWishlist = wishlist.some((item) => item.product_id === product.id);
+    console.log("Is product in wishlist?", isInWishlist);
+    
+    if (isInWishlist) {
+      // Find the wishlist item to get its ID (which is the wishlist_item_id)
+      const wishlistItem = wishlist.find(item => item.product_id === product.id);
+      console.log("Found wishlist item:", wishlistItem);
+      
+      if (wishlistItem) {
+        // Pass the wishlist_item_id (stored in the id property) to removeFromWishlist
+        removeFromWishlist(wishlistItem.id);
+        window.location.reload();
+        // Show success toast
+        toast({
+          title: "Removed from wishlist",
+          description: `${product.name} removed from your wishlist`,
+        });
+      } else {
+        console.error("Wishlist item found but could not be retrieved");
+      }
     } else {
-      setWishlist([...wishlist, product])
+      // Use the local addToWishlist function with the product_id
+      addToWishlist(product.id);
+      window.location.reload();
+      // Show success toast
       toast({
         title: "Added to wishlist",
         description: `${product.name} added to your wishlist`,
-      })
+      });
     }
-  }
+  };
 
   const renderStars = (rating) => {
     const ratingValue = parseFloat(rating) || 0;
@@ -738,7 +827,7 @@ export function Marketplace() {
                   }}
                 >
                   <Heart
-                    className={`h-4 w-4 ${wishlist.some((item) => item.id === product.id) ? "fill-primary text-primary" : ""}`}
+                    className={`h-4 w-4 ${wishlist.some((item) => item.product_id === product.id) ? "fill-primary text-primary" : ""}`}
                   />
                 </Button>
               </div>
@@ -869,10 +958,10 @@ export function Marketplace() {
                       variant="outline"
                       size="icon"
                       onClick={() => toggleWishlist(selectedProduct)}
-                      className={wishlist.some((item) => item.id === selectedProduct.id) ? "bg-primary/10" : ""}
+                      className={wishlist.some((item) => item.product_id === selectedProduct.id) ? "bg-primary/10" : ""}
                     >
                       <Heart
-                        className={`h-4 w-4 ${wishlist.some((item) => item.id === selectedProduct.id) ? "fill-primary text-primary" : ""}`}
+                        className={`h-4 w-4 ${wishlist.some((item) => item.product_id === selectedProduct.id) ? "fill-primary text-primary" : ""}`}
                       />
                     </Button>
                   </div>
@@ -961,32 +1050,3 @@ export function Marketplace() {
     </div>
   )
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

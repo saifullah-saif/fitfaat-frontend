@@ -1,25 +1,35 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import axios from "axios"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { useToast } from "@/components/ui/use-toast"
 import { CreditCard } from "lucide-react"
+import { useAuth } from "@/components/auth-provider"
+import { useCart } from "@/components/navbar"
 
-// Mock cart data - in a real app, this would come from state management
-const cartItems = [
-  { id: 1, name: "Premium Protein Powder", price: 49.99, quantity: 1, image: "/placeholder.svg?height=80&width=80" },
-  { id: 2, name: "Resistance Bands Set", price: 24.99, quantity: 2, image: "/placeholder.svg?height=80&width=80" },
-]
+// Configure axios defaults
+const api = axios.create({
+  baseURL: 'http://localhost:5000',
+  timeout: 5000,
+  withCredentials: true,
+});
 
 export default function CheckoutPage() {
   const router = useRouter()
+  const { toast } = useToast()
+  const { user, isAuthenticated } = useAuth()
+  const { setCart, refreshCart } = useCart() // Get refreshCart from cart context
   const [paymentMethod, setPaymentMethod] = useState("card")
   const [isProcessing, setIsProcessing] = useState(false)
+  const [cartItems, setCartItems] = useState([])
+  const [isLoading, setIsLoading] = useState(true)
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -32,6 +42,47 @@ export default function CheckoutPage() {
     cardCvc: "",
   })
 
+  // Fetch cart data when component mounts
+  useEffect(() => {
+    const fetchCart = async () => {
+      if (!isAuthenticated) {
+        router.push('/login');
+        return;
+      }
+      
+      try {
+        setIsLoading(true);
+        const response = await api.get("/cart");
+        
+        if (response.data && Array.isArray(response.data.items)) {
+          setCartItems(response.data.items);
+        }
+      } catch (err) {
+        console.error("Error fetching cart:", err);
+        toast({
+          title: "Error",
+          description: "Failed to load your cart. Please try again.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchCart();
+  }, [isAuthenticated, router, toast]);
+
+  // Pre-fill form with user data if available
+  useEffect(() => {
+    if (user) {
+      setFormData(prev => ({
+        ...prev,
+        name: user.name || user.first_name + " " + user.last_name || "",
+        email: user.email || "",
+      }));
+    }
+  }, [user]);
+
   const subtotal = cartItems.reduce((total, item) => total + item.price * item.quantity, 0)
   const shipping = 5.99
   const tax = subtotal * 0.08
@@ -42,15 +93,67 @@ export default function CheckoutPage() {
     setFormData({ ...formData, [name]: value })
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
     setIsProcessing(true)
 
-    // Simulate payment processing
-    setTimeout(() => {
-      setIsProcessing(false)
-      router.push("/checkout/success")
-    }, 2000)
+    try {
+      // Send order data to server
+      const response = await api.post("/cart/checkout", {
+        name: formData.name,
+        address: formData.address,
+        city: formData.city,
+        postalCode: formData.postalCode,
+        country: formData.country,
+        paymentMethod: paymentMethod === "card" ? "Credit Card" : "Bkash"
+      });
+
+      console.log("Order created:", response.data);
+      
+      // Store order details in localStorage for the success page
+      localStorage.setItem("lastOrder", JSON.stringify({
+        orderId: response.data.orderId,
+        total: response.data.total,
+        items: cartItems
+      }));
+      
+      // Immediately clear the cart state before navigation
+      setCart([]);
+      
+      // Also refresh the cart in the context to sync with server
+      await refreshCart();
+      
+      // Redirect to success page
+      router.push("/checkout/success");
+    } catch (err) {
+      console.error("Error creating order:", err);
+      toast({
+        title: "Checkout Failed",
+        description: err.response?.data?.message || "There was an error processing your order. Please try again.",
+        variant: "destructive",
+      });
+      setIsProcessing(false);
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="container max-w-6xl py-8 flex justify-center items-center min-h-[60vh]">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (cartItems.length === 0) {
+    return (
+      <div className="container max-w-6xl py-8 flex flex-col items-center justify-center min-h-[60vh]">
+        <h1 className="text-3xl font-bold mb-4">Your Cart is Empty</h1>
+        <p className="text-muted-foreground mb-6">Add some items to your cart before checking out.</p>
+        <Button asChild>
+          <Link href="/marketplace">Go to Marketplace</Link>
+        </Button>
+      </div>
+    );
   }
 
   return (
@@ -144,7 +247,7 @@ export default function CheckoutPage() {
                 <Tabs defaultValue="card" onValueChange={setPaymentMethod}>
                   <TabsList className="grid w-full grid-cols-2">
                     <TabsTrigger value="card">Credit Card</TabsTrigger>
-                    <TabsTrigger value="paypal">PayPal</TabsTrigger>
+                    <TabsTrigger value="bkash">Bkash</TabsTrigger>
                   </TabsList>
                   <TabsContent value="card" className="pt-4">
                     <div className="grid gap-4">
@@ -160,7 +263,7 @@ export default function CheckoutPage() {
                             required={paymentMethod === "card"}
                             className="payment-form-input pl-10"
                           />
-                          <CreditCard className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                          
                         </div>
                       </div>
                       <div className="grid grid-cols-2 gap-4">
@@ -191,12 +294,12 @@ export default function CheckoutPage() {
                       </div>
                     </div>
                   </TabsContent>
-                  <TabsContent value="paypal" className="pt-4">
+                  <TabsContent value="bkash" className="pt-4">
                     <div className="flex flex-col items-center justify-center p-6 border rounded-lg">
                       <p className="text-center text-muted-foreground mb-4">
-                        You will be redirected to PayPal to complete your payment.
+                        You will be redirected to Bkash to complete your payment.
                       </p>
-                      <img src="/placeholder.svg?height=40&width=150&text=PayPal" alt="PayPal" className="h-10" />
+                      <img src="/placeholder.svg?height=40&width=150&text=Bkash" alt="Bkash" className="h-10" />
                     </div>
                   </TabsContent>
                 </Tabs>

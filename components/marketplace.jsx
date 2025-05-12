@@ -51,7 +51,7 @@ export function Marketplace() {
   const [selectedProduct, setSelectedProduct] = useState(null)
   const [quantity, setQuantity] = useState(1)
   const [reviewDialogOpen, setReviewDialogOpen] = useState(false)
-  const [newReview, setNewReview] = useState({ rating: 5, comment: "" })
+  const [newReview, setNewReview] = useState({ rating: 5 })
   const [cart, setCart] = useState([]) // Initialize cart state but don't display it in the UI
   const [products, setProducts] = useState([])
   const [categories, setCategories] = useState([
@@ -70,7 +70,7 @@ export function Marketplace() {
 
     try {
       const response = await api.get("/marketplace/wishlist");
-      
+
       if (response.data && Array.isArray(response.data.items)) {
         console.log("Wishlist items from server:", response.data.items);
         setWishlist(response.data.items);
@@ -120,7 +120,7 @@ export function Marketplace() {
       try {
         const response = await api.get("/marketplace/api/categories");
         console.log("Categories response:", response.data);
-        
+
         if (Array.isArray(response.data) && response.data.length > 0) {
           // Add "All Products" as the first option
           setCategories([
@@ -133,7 +133,7 @@ export function Marketplace() {
         // Keep the default "All Products" category if there's an error
       }
     };
-    
+
     fetchCategories();
   }, []);
 
@@ -143,7 +143,7 @@ export function Marketplace() {
       try {
         setLoading(true);
         console.log(`Fetching products for category: ${selectedCategory}, sort: ${sortOption}`);
-        
+
         // Use the new sort endpoint with category as a query parameter
         const response = await api.get(`/marketplace/api/products/sort/${sortOption}?category=${selectedCategory}`);
 
@@ -202,12 +202,13 @@ export function Marketplace() {
   const debouncedSearch = useCallback((query) => {
     const timeoutId = setTimeout(async () => {
       if (!query.trim()) {
-        // If search is empty, fetch all products
+        // If search is empty, fetch all products with ratings
         try {
           setLoading(true);
-          console.log("Fetching all products (from search)");
+          console.log("Fetching all products with ratings (from search)");
 
-          const response = await api.get("/marketplace/api/products");
+          // Use the sort endpoint which includes ratings
+          const response = await api.get("/marketplace/api/products/sort/featured");
 
           if (!Array.isArray(response.data)) {
             console.error("Invalid response format:", response.data);
@@ -227,8 +228,8 @@ export function Marketplace() {
             sku: product.sku,
             image: product.image_url,
             images: product.image_url ? [product.image_url] : [],
-            rating: 0,
-            reviewCount: 0,
+            rating: parseFloat(product.rating) || 0,
+            reviewCount: parseInt(product.rating_count) || 0,
             reviews: [],
             details: {
               sku: product.sku,
@@ -271,25 +272,63 @@ export function Marketplace() {
 
         console.log(`Found ${response.data.length} products matching "${query}"`);
 
-        const formattedProducts = response.data.map(product => ({
-          id: product.product_id,
-          name: product.name,
-          description: product.description,
-          category: product.category_id.toString(),
-          price: parseFloat(product.price) || 0,
-          sale_price: product.sale_price ? parseFloat(product.sale_price) : null,
-          stock: product.stock_quantity,
-          sku: product.sku,
-          image: product.image_url,
-          images: product.image_url ? [product.image_url] : [],
-          rating: 0,
-          reviewCount: 0,
-          reviews: [],
-          details: {
-            sku: product.sku,
-            stock: product.stock_quantity
+        // After getting search results, fetch ratings for each product
+        // This is a workaround since the search endpoint doesn't include ratings
+        const productIds = response.data.map(product => product.product_id);
+
+        // Create a map to store ratings for each product
+        const ratingsMap = {};
+
+        // If we have products, fetch their ratings
+        if (productIds.length > 0) {
+          try {
+            // We'll use the individual product endpoint to get ratings for each product
+            // This could be optimized with a batch endpoint in the future
+            const ratingPromises = productIds.map(id =>
+              api.get(`/marketplace/api/products/${id}`)
+                .then(res => {
+                  ratingsMap[id] = {
+                    rating: parseFloat(res.data.rating) || 0,
+                    rating_count: parseInt(res.data.rating_count) || 0
+                  };
+                })
+                .catch(err => {
+                  console.error(`Error fetching ratings for product ${id}:`, err);
+                  // If we fail to get ratings, use defaults
+                  ratingsMap[id] = { rating: 0, rating_count: 0 };
+                })
+            );
+
+            // Wait for all rating requests to complete
+            await Promise.all(ratingPromises);
+          } catch (err) {
+            console.error("Error fetching product ratings:", err);
           }
-        }));
+        }
+
+        const formattedProducts = response.data.map(product => {
+          const productRatings = ratingsMap[product.product_id] || { rating: 0, rating_count: 0 };
+
+          return {
+            id: product.product_id,
+            name: product.name,
+            description: product.description,
+            category: product.category_id.toString(),
+            price: parseFloat(product.price) || 0,
+            sale_price: product.sale_price ? parseFloat(product.sale_price) : null,
+            stock: product.stock_quantity,
+            sku: product.sku,
+            image: product.image_url,
+            images: product.image_url ? [product.image_url] : [],
+            rating: productRatings.rating,
+            reviewCount: productRatings.rating_count,
+            reviews: [],
+            details: {
+              sku: product.sku,
+              stock: product.stock_quantity
+            }
+          };
+        });
 
         setProducts(formattedProducts);
         setError(null);
@@ -331,11 +370,12 @@ export function Marketplace() {
         await api.get('/marketplace/test');
         console.log('Server is available');
 
-        // Then fetch products directly
+        // Then fetch products directly with ratings using the sort endpoint
         setLoading(true);
-        console.log("Fetching all products (initial load)");
+        console.log("Fetching all products with ratings (initial load)");
 
-        const response = await api.get("/marketplace/api/products");
+        // Use the sort endpoint which includes ratings
+        const response = await api.get("/marketplace/api/products/sort/featured");
 
         if (!Array.isArray(response.data)) {
           console.error("Invalid response format:", response.data);
@@ -355,8 +395,8 @@ export function Marketplace() {
           sku: product.sku,
           image: product.image_url,
           images: product.image_url ? [product.image_url] : [],
-          rating: 0,
-          reviewCount: 0,
+          rating: parseFloat(product.rating) || 0,
+          reviewCount: parseInt(product.rating_count) || 0,
           reviews: [],
           details: {
             sku: product.sku,
@@ -407,9 +447,9 @@ export function Marketplace() {
 
       // Then fetch the latest product details from the server
       const response = await api.get(`/marketplace/api/products/${product.id}`);
-      
+
       console.log("Product API response:", response.data);
-      
+
       // Format the product data - make sure we're using the correct property names from the API
       const formattedProduct = {
         id: response.data.product_id,
@@ -431,7 +471,7 @@ export function Marketplace() {
           stock: response.data.stock_quantity
         }
       };
-      
+
       console.log("Formatted product with ratings:", {
         rating: formattedProduct.rating,
         reviewCount: formattedProduct.reviewCount
@@ -459,42 +499,68 @@ export function Marketplace() {
     }
   }
 
-  const handleAddReview = () => {
-    if (!selectedProduct || !newReview.comment) return
+  const handleAddReview = async () => {
+    if (!selectedProduct) return;
 
-    // Create a new review object
-    const review = {
-      id: Date.now(), // Simple unique ID
-      user: "Current User", // In a real app, this would be the logged-in user
-      avatar: "/placeholder.svg?height=40&width=40",
-      rating: newReview.rating,
-      date: new Date().toISOString().split("T")[0], // Format as YYYY-MM-DD
-      comment: newReview.comment,
+    // Check if user is logged in
+    if (!user) {
+      toast({
+        title: "Please log in",
+        description: "You need to be logged in to rate products",
+        variant: "destructive",
+      });
+      return;
     }
 
-    // Update the product with the new review
-    const updatedProduct = {
-      ...selectedProduct,
-      reviews: [review, ...selectedProduct.reviews],
-      reviewCount: selectedProduct.reviewCount + 1,
-      // Recalculate average rating
-      rating:
-        (selectedProduct.rating * selectedProduct.reviewCount + review.rating) / (selectedProduct.reviewCount + 1),
+    try {
+      console.log(`Submitting rating ${newReview.rating} for product ${selectedProduct.id}`);
+
+      // Call the API to add/update the rating
+      const response = await api.post("/marketplace/api/products/rate", {
+        productId: selectedProduct.id,
+        rating: newReview.rating
+      });
+
+      console.log("Rating response:", response.data);
+
+      // Update the product with the new rating from the server
+      const updatedProduct = {
+        ...selectedProduct,
+        rating: parseFloat(response.data.rating) || 0,
+        reviewCount: parseInt(response.data.ratingCount) || 0
+      };
+
+      // Update the selected product
+      setSelectedProduct(updatedProduct);
+
+      // Also update the product in the products array
+      setProducts(products.map(p =>
+        p.id === selectedProduct.id ? { ...p, rating: updatedProduct.rating, reviewCount: updatedProduct.reviewCount } : p
+      ));
+
+      // Close the dialog and reset the form
+      setReviewDialogOpen(false);
+      setNewReview({ rating: 5 });
+
+      toast({
+        title: "Rating submitted",
+        description: "Thank you for your feedback!",
+      });
+    } catch (err) {
+      console.error("Error submitting rating:", err);
+
+      let errorMessage = "Failed to submit rating";
+      if (err.response) {
+        console.error("Error response:", err.response.data);
+        errorMessage = err.response.data.message || errorMessage;
+      }
+
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
     }
-
-    // Update the product in the products array
-    // In a real app, this would send the review to the database and update all products
-    // For now, we'll just update the local state for the selected product
-    setSelectedProduct(updatedProduct)
-
-    // Reset the review form
-    setReviewDialogOpen(false)
-    setNewReview({ rating: 5, comment: "" })
-
-    toast({
-      title: "Review submitted",
-      description: "Thank you for your feedback!",
-    })
   }
 
   const addToCart = async (product, qty = 1) => {
@@ -511,8 +577,8 @@ export function Marketplace() {
         return;
       }
 
-      console.log("Adding to cart:", { 
-        productId: product.id, 
+      console.log("Adding to cart:", {
+        productId: product.id,
         quantity: qty,
         user: user ? `ID: ${user.id || user.user_id || 'unknown'}` : 'not logged in'
       });
@@ -560,10 +626,10 @@ export function Marketplace() {
       }
     } catch (err) {
       console.error("Error adding to cart:", err);
-      
+
       // Show error toast
       let errorMessage = "Failed to add item to cart";
-      
+
       if (err.response) {
         console.error("Error response:", err.response.data);
         if (err.response.status === 400 && err.response.data.message === "Not enough stock") {
@@ -574,7 +640,7 @@ export function Marketplace() {
           errorMessage = err.response.data.message || errorMessage;
         }
       }
-      
+
       toast({
         title: "Error",
         description: errorMessage,
@@ -596,16 +662,16 @@ export function Marketplace() {
 
     console.log("Toggle wishlist for product:", product);
     console.log("Current wishlist:", wishlist);
-    
+
     // product.id is the product_id, but in wishlist items we have both id (wishlist_item_id) and product_id
     const isInWishlist = wishlist.some((item) => item.product_id === product.id);
     console.log("Is product in wishlist?", isInWishlist);
-    
+
     if (isInWishlist) {
       // Find the wishlist item to get its ID (which is the wishlist_item_id)
       const wishlistItem = wishlist.find(item => item.product_id === product.id);
       console.log("Found wishlist item:", wishlistItem);
-      
+
       if (wishlistItem) {
         // Pass the wishlist_item_id (stored in the id property) to removeFromWishlist
         removeFromWishlist(wishlistItem.id);
@@ -632,14 +698,13 @@ export function Marketplace() {
 
   const renderStars = (rating) => {
     const ratingValue = parseFloat(rating) || 0;
-    console.log("Rendering stars for rating:", ratingValue);
-    
+
     return Array(5)
       .fill(0)
       .map((_, i) => (
-        <Star 
-          key={i} 
-          className={`h-4 w-4 ${i < Math.round(ratingValue) ? "text-primary fill-primary" : "text-gray-300"}`} 
+        <Star
+          key={i}
+          className={`h-4 w-4 ${i < Math.round(ratingValue) ? "text-primary fill-primary" : "text-gray-300"}`}
         />
       ));
   }
@@ -648,13 +713,13 @@ export function Marketplace() {
   useEffect(() => {
     const fetchCart = async () => {
       if (!user) return;
-      
+
       try {
         console.log("Fetching cart for user:", user);
         const response = await api.get("/cart");
-        
+
         console.log("Cart response:", response.data);
-        
+
         if (response.data && Array.isArray(response.data.items)) {
           // Format cart items to match our local state format
           const formattedItems = response.data.items.map(item => ({
@@ -664,7 +729,7 @@ export function Marketplace() {
             quantity: item.quantity,
             image: item.image || item.image_url,
           }));
-          
+
           setCart(formattedItems);
         }
       } catch (err) {
@@ -674,7 +739,7 @@ export function Marketplace() {
         }
       }
     };
-    
+
     fetchCart();
   }, [user]);
 
@@ -682,27 +747,27 @@ export function Marketplace() {
   const updateCartItemQuantity = async (itemId, newQuantity) => {
     try {
       if (newQuantity < 1) return;
-      
+
       const response = await api.put(`/cart/update/${itemId}`, { quantity: newQuantity });
       console.log("Update cart response:", response.data);
-      
+
       // Update local cart state
-      setCart(cart.map(item => 
+      setCart(cart.map(item =>
         item.id === itemId ? { ...item, quantity: newQuantity } : item
       ));
-      
+
       toast({
         title: "Cart updated",
         description: "Item quantity updated successfully",
       });
     } catch (err) {
       console.error("Error updating cart item:", err);
-      
+
       let errorMessage = "Failed to update item";
       if (err.response && err.response.status === 400 && err.response.data.message === "Not enough stock") {
         errorMessage = `Only ${err.response.data.available} items available`;
       }
-      
+
       toast({
         title: "Error",
         description: errorMessage,
@@ -716,17 +781,17 @@ export function Marketplace() {
     try {
       const response = await api.delete(`/cart/remove/${itemId}`);
       console.log("Remove from cart response:", response.data);
-      
+
       // Update local cart state
       setCart(cart.filter(item => item.id !== itemId));
-      
+
       toast({
         title: "Item removed",
         description: "Item removed from your cart",
       });
     } catch (err) {
       console.error("Error removing cart item:", err);
-      
+
       toast({
         title: "Error",
         description: "Failed to remove item from cart",
@@ -808,16 +873,7 @@ export function Marketplace() {
                   onClick={() => handleProductClick(product)}
                 />
                 <Badge className="absolute top-2 right-2">{product.category}</Badge>
-                <Button
-                  size="icon"
-                  className="absolute bottom-2 right-2 h-8 w-8 rounded-full"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    addToCart(product)
-                  }}
-                >
-                  <ShoppingCart className="h-4 w-4" />
-                </Button>
+
                 <Button
                   size="icon"
                   className="absolute bottom-2 left-2 h-8 w-8 rounded-full"
@@ -839,9 +895,8 @@ export function Marketplace() {
                   {product.name}
                 </h3>
                 <div className="flex items-center justify-between mt-2">
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center">
                     <div className="flex">{renderStars(product.rating)}</div>
-                    <span className="text-xs text-muted-foreground">{product.rating}</span>
                   </div>
                   <span className="font-medium">${typeof product.price === 'number' ? product.price.toFixed(2) : '0.00'}</span>
                 </div>
@@ -912,9 +967,7 @@ export function Marketplace() {
                         {selectedProduct.rating ? selectedProduct.rating.toFixed(1) : '0.0'}
                       </span>
                     </div>
-                    <span className="text-sm text-muted-foreground">
-                      {selectedProduct.reviewCount || 0} reviews
-                    </span>
+
                   </div>
                 </div>
                 <div className="pt-4 border-t">
@@ -969,8 +1022,8 @@ export function Marketplace() {
               </div>
             </div>
             <div className="mt-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold">Reviews</h3>
+              <div className="flex items-end justify-end mb-4">
+
                 <Button size="sm" onClick={() => setReviewDialogOpen(true)}>
                   Add Rating
                 </Button>
@@ -1004,8 +1057,8 @@ export function Marketplace() {
       <Dialog open={reviewDialogOpen} onOpenChange={setReviewDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Add Review</DialogTitle>
-            <DialogDescription>Share your experience with this product.</DialogDescription>
+            <DialogTitle>Rate this Product</DialogTitle>
+            <DialogDescription>Select a star rating for this product.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="flex items-center justify-center">
@@ -1014,27 +1067,22 @@ export function Marketplace() {
                   <button
                     key={star}
                     type="button"
-                    className="p-1"
+                    className="p-2"
                     onClick={() => setNewReview({ ...newReview, rating: star })}
                   >
                     <Star
-                      className={`h-6 w-6 ${star <= newReview.rating ? "text-primary fill-primary" : "text-gray-300"}`}
+                      className={`h-8 w-8 ${star <= newReview.rating ? "text-primary fill-primary" : "text-gray-300"}`}
                     />
                   </button>
                 ))}
               </div>
             </div>
-            <div className="space-y-2">
-              <label htmlFor="comment" className="text-sm font-medium">
-                Your Review
-              </label>
-              <Textarea
-                id="comment"
-                placeholder="Write your review here..."
-                rows={4}
-                value={newReview.comment}
-                onChange={(e) => setNewReview({ ...newReview, comment: e.target.value })}
-              />
+            <div className="text-center text-sm text-muted-foreground">
+              {newReview.rating === 1 && "Poor"}
+              {newReview.rating === 2 && "Fair"}
+              {newReview.rating === 3 && "Good"}
+              {newReview.rating === 4 && "Very Good"}
+              {newReview.rating === 5 && "Excellent"}
             </div>
           </div>
           <DialogFooter>
@@ -1042,7 +1090,7 @@ export function Marketplace() {
               Cancel
             </Button>
             <Button type="button" onClick={handleAddReview}>
-              Submit Review
+              Submit Rating
             </Button>
           </DialogFooter>
         </DialogContent>

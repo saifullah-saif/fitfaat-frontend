@@ -60,30 +60,12 @@ export function Navbar() {
     setMounted(true)
     // Mock cart data - in a real app, this would come from state management
     setCart([
-      {
-        id: 1,
-        name: "Premium Protein Powder",
-        price: 49.99,
-        quantity: 1,
-        image: "/placeholder.svg?height=80&width=80",
-      },
-      { id: 2, name: "Resistance Bands Set", price: 24.99, quantity: 2, image: "/placeholder.svg?height=80&width=80" },
+      
     ])
 
     // Mock wishlist data - in a real app, this would come from state management
     setWishlist([
-      {
-        id: 3,
-        name: "Fitness Tracker Watch",
-        price: 129.99,
-        image: "/placeholder.svg?height=80&width=80",
-      },
-      {
-        id: 6,
-        name: "Yoga Mat",
-        price: 34.99,
-        image: "/placeholder.svg?height=80&width=80",
-      },
+      
     ])
 
     // Check theme

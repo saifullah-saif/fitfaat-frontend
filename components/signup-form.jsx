@@ -199,6 +199,19 @@ export function SignupForm() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="location">Location</Label>
+                            <select
+                id="gender"
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                required
+              >
+                <option value="23.76634568940094, 90.35882585579776">Mohammadpur</option>
+                <option value="23.78086446683209, 90.42676544320997">Badda</option>
+                <option value="23.79432111610882, 90.4167017933585">Gulshan</option>
+                <option value="23.742041424328946, 90.36899548884092">Dhanmondi</option>
+              </select>
+{/* 
               <Input
                 id="location"
                 type="text"
@@ -206,7 +219,7 @@ export function SignupForm() {
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
                 required
-              />
+              /> */}
             </div>
 
             <Button type="submit" className="w-full" disabled={isLoading}>

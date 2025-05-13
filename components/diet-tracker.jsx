@@ -229,7 +229,7 @@ export function DietTracker() {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList>
           <TabsTrigger value="today">Today</TabsTrigger>
-          <TabsTrigger value="yesterday">Yesterday</TabsTrigger>
+          
           <TabsTrigger value="meal-planner">Meal Planner</TabsTrigger>
           <TabsTrigger value="calculator">Diet Calculator</TabsTrigger>
         </TabsList>

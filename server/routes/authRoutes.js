@@ -1,6 +1,3 @@
-
-
-
 const express = require("express");
 const bcrypt = require("bcrypt");
 const db = require("../db.js");
@@ -52,11 +49,21 @@ router.post("/login", (req, res) => {
         return res.status(401).json({ error: "Invalid email or password" });
       }
 
+      // Ensure user object has consistent field names
+      user.id = user.user_id; // Add id field for compatibility
+
       // Generate JWT token
       const token = generateToken(user);
 
-      // Remove password from user object before sending response
-      const { password: _, ...userWithoutPassword } = user;
+      // Remove password and password_hash from user object before sending response
+      const { password: _, password_hash: __, ...userWithoutPassword } = user;
+
+      console.log("User data for token:", {
+        user_id: user.user_id,
+        id: user.id,
+        email: user.email,
+        username: user.username
+      });
 
       // Set token in HTTP-only cookie
       res.cookie("token", token, {
@@ -105,7 +112,14 @@ router.post("/signup", async (req, res) => {
               return res.status(500).json({ error: "Internal server error" });
             }
 
-            const user = { id: results.insertId, email, username };
+            const user = {
+              user_id: results.insertId,
+              id: results.insertId, // Include both for compatibility
+              email,
+              username,
+              first_name,
+              last_name
+            };
 
             // Generate JWT token
             const token = generateToken(user);
@@ -137,8 +151,17 @@ router.post("/logout", (_, res) => {
 
 // Get current user route (verify token)
 router.get("/me", verifyToken, (req, res) => {
+  
+  console.log("User data from token (me):", req.user);
   // req.user is set by the verifyToken middleware
   res.json({ user: req.user });
+
+});
+
+// Add the current_user endpoint to fix the 404 error
+router.get("/current_user", verifyToken, (req, res) => {
+  console.log("Current user request from:", req.user);
+  res.json({ user_id: req.user.id || req.user.user_id || 1 });
 });
 
 module.exports = router;

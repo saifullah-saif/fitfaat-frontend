@@ -14,146 +14,61 @@ export default function WorkoutDetailPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // In a real app, this would be an API call
-    const workoutData = {
-      "upper-body": {
-        "bench-press": {
-          name: "Bench Press",
-          description:
-            "The bench press is a compound exercise that targets the muscles of the upper body. It involves lying on a bench and pressing weight upward using either a barbell or dumbbells. The bench press is one of the three lifts in the sport of powerlifting and is used extensively in weight training, bodybuilding, and other types of training to develop the chest muscles.",
-          muscles: ["Chest", "Shoulders", "Triceps"],
+    const fetchExerciseData = async () => {
+      try {
+        setLoading(true)
+
+        // Import axios dynamically to avoid server-side rendering issues
+        const axios = (await import('axios')).default
+
+        // Create axios instance with common configuration
+        const api = axios.create({
+          baseURL: '/api',
+          timeout: 10000,
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        })
+
+        // Fetch the specific exercise by ID
+        const response = await api.get(`/exercises/fetch_exercise/${id}`)
+
+        const exerciseData = response.data
+        console.log('Exercise data:', exerciseData)
+
+        // Transform the data to match the expected format
+        const processedWorkout = {
+          name: exerciseData.name,
+          description: exerciseData.description,
+          muscles: exerciseData.muscle_group ? exerciseData.muscle_group.split(', ') : [],
+          difficulty: exerciseData.difficulty_level,
+          equipment: exerciseData.equipment_needed,
+          videoUrl: exerciseData.video_tutorial_url,
+          // Create some generic steps based on the exercise type
           steps: [
-            "Lie on a flat bench with your feet flat on the floor.",
-            "Grip the barbell with hands slightly wider than shoulder-width apart.",
-            "Unrack the barbell and position it over your chest with arms fully extended.",
-            "Lower the barbell to your mid-chest.",
-            "Press the barbell back to the starting position.",
-          ],
-          videoUrl: "https://www.youtube.com/embed/rT7DgCr-3pg",
-        },
-        "shoulder-press": {
-          name: "Shoulder Press",
-          description:
-            "The shoulder press is a strength training exercise targeting the shoulder muscles. It involves pressing weight from the shoulders until the arms are extended overhead.",
-          muscles: ["Shoulders", "Triceps", "Upper Chest"],
-          steps: [
-            "Sit on a bench with back support.",
-            "Hold a dumbbell in each hand at shoulder height.",
-            "Press the weights upward until your arms are fully extended.",
-            "Lower the weights back to shoulder level.",
-          ],
-          videoUrl: "https://www.youtube.com/embed/qEwKCR5JCog",
-        },
-      },
-      "lower-body": {
-        squats: {
-          name: "Squats",
-          description:
-            "The squat is a compound exercise that primarily targets the muscles of the thighs, hips, buttocks, and quads. It also strengthens the bones, ligaments, and tendons throughout the lower body.",
-          muscles: ["Quadriceps", "Hamstrings", "Glutes", "Lower Back"],
-          steps: [
-            "Stand with feet shoulder-width apart.",
-            "Bend your knees and lower your hips as if sitting in a chair.",
-            "Keep your chest up and back straight.",
-            "Lower until thighs are parallel to the ground (or as low as comfortable).",
-            "Push through your heels to return to standing position.",
-          ],
-          videoUrl: "https://www.youtube.com/embed/ultWZbUMPL8",
-        },
-        lunges: {
-          name: "Lunges",
-          description:
-            "Lunges are a lower body exercise that works the quadriceps, hamstrings, glutes, and calves. They also improve balance, coordination, and core stability.",
-          muscles: ["Quadriceps", "Hamstrings", "Glutes", "Calves"],
-          steps: [
-            "Stand with feet hip-width apart.",
-            "Take a step forward with one leg.",
-            "Lower your body until both knees are bent at 90-degree angles.",
-            "Push through the front heel to return to starting position.",
-            "Repeat with the other leg.",
-          ],
-          videoUrl: "https://www.youtube.com/embed/QOVaHwm-Q6U",
-        },
-      },
-      cardio: {
-        running: {
-          name: "Running",
-          description:
-            "Running is a method of terrestrial locomotion allowing humans to move rapidly on foot. It is a type of gait characterized by an aerial phase in which all feet are above the ground. Running is a popular form of exercise that improves cardiovascular health, builds endurance, and burns calories.",
-          benefits: ["Improves cardiovascular health", "Burns calories", "Builds endurance", "Reduces stress"],
-          tips: [
-            "Start with a warm-up walk.",
-            "Maintain good posture with shoulders relaxed.",
-            "Land midfoot, not on your heels or toes.",
-            "Breathe rhythmically and deeply.",
-            "Cool down with a walk after running.",
-          ],
-          videoUrl: "https://www.youtube.com/embed/brFHyOtTwH4",
-        },
-        cycling: {
-          name: "Cycling",
-          description:
-            "Cycling is the use of bicycles for transport, recreation, exercise, or sport. It is an effective cardiovascular exercise that strengthens your heart, lungs, and muscles with minimal impact on your joints.",
-          benefits: [
-            "Low-impact cardiovascular exercise",
-            "Builds leg strength",
-            "Improves joint mobility",
-            "Environmentally friendly transportation",
-          ],
-          tips: [
-            "Adjust your bike to fit your body properly.",
-            "Wear a helmet for safety.",
-            "Start with shorter rides and gradually increase distance.",
-            "Maintain a cadence of 70-90 rpm for efficiency.",
-            "Stay hydrated during longer rides.",
-          ],
-          videoUrl: "https://www.youtube.com/embed/r6xn-Q5oSR0",
-        },
-      },
-      core: {
-        planks: {
-          name: "Planks",
-          description:
-            "Running is a method of terrestrial locomotion allowing humans to move rapidly on foot. It is a type of gait characterized by an aerial phase in which all feet are above the ground. Running is a popular form of exercise that improves cardiovascular health, builds endurance, and burns calories.",
-          benefits: ["Improves cardiovascular health", "Burns calories", "Builds endurance", "Reduces stress"],
-          tips: [
-            "Start with a warm-up walk.",
-            "Maintain good posture with shoulders relaxed.",
-            "Land midfoot, not on your heels or toes.",
-            "Breathe rhythmically and deeply.",
-            "Cool down with a walk after running.",
-          ],
-          videoUrl: "https://www.youtube.com/embed/brFHyOtTwH4",
-        },
-        cycling: {
-          name: "Cycling",
-          description:
-            "Cycling is the use of bicycles for transport, recreation, exercise, or sport. It is an effective cardiovascular exercise that strengthens your heart, lungs, and muscles with minimal impact on your joints.",
-          benefits: [
-            "Low-impact cardiovascular exercise",
-            "Builds leg strength",
-            "Improves joint mobility",
-            "Environmentally friendly transportation",
-          ],
-          tips: [
-            "Adjust your bike to fit your body properly.",
-            "Wear a helmet for safety.",
-            "Start with shorter rides and gradually increase distance.",
-            "Maintain a cadence of 70-90 rpm for efficiency.",
-            "Stay hydrated during longer rides.",
-          ],
-          videoUrl: "https://www.youtube.com/embed/r6xn-Q5oSR0",
-        },
-      },
+            "Prepare the proper equipment: " + (exerciseData.equipment_needed || "None required"),
+            "Ensure proper form and posture",
+            "Perform the exercise with controlled movements",
+            "Focus on the target muscles: " + (exerciseData.muscle_group || "Full body"),
+            "Maintain proper breathing throughout the exercise"
+          ]
+        }
+
+        setWorkout(processedWorkout)
+        setLoading(false)
+      } catch (error) {
+        console.error('Error fetching exercise data:', error)
+        // Get more detailed error information from axios error
+        const errorMessage = error.response
+          ? `Error ${error.response.status}: ${error.response.data.error || error.message}`
+          : error.message
+        console.error(errorMessage)
+        setLoading(false)
+      }
     }
 
-    setTimeout(() => {
-      if (workoutData[type] && workoutData[type][id]) {
-        setWorkout(workoutData[type][id])
-      }
-      setLoading(false)
-    }, 500)
-  }, [type, id])
+    fetchExerciseData()
+  }, [id])
 
   if (loading) {
     return (
@@ -198,7 +113,25 @@ export default function WorkoutDetailPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          
+          {workout.difficulty && (
+            <div className="flex items-center">
+              <span className="text-sm font-medium mr-2">Difficulty:</span>
+              <span className={`px-2 py-1 rounded-full text-xs ${
+                workout.difficulty === 'Beginner' ? 'bg-green-100 text-green-800' :
+                workout.difficulty === 'Intermediate' ? 'bg-yellow-100 text-yellow-800' :
+                'bg-red-100 text-red-800'
+              }`}>
+                {workout.difficulty}
+              </span>
+            </div>
+          )}
+
+          {workout.equipment && (
+            <div>
+              <h3 className="text-lg font-semibold mb-2">Equipment Needed</h3>
+              <p>{workout.equipment}</p>
+            </div>
+          )}
 
           <div>
             <h3 className="text-lg font-semibold mb-2">Description</h3>

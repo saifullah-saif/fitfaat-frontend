@@ -150,64 +150,8 @@ const defaultGroups = [
   }
 ]
 
-// Mock data for rankings
-const rankings = [
-  {
-    id: 1,
-    user: {
-      name: "Sarah Williams",
-      avatar: "/placeholder.svg?height=40&width=40",
-    },
-    points: 1250,
-    rank: 1,
-    achievements: ["10K Steps Daily", "Workout Streak: 14 days", "Community Leader"],
-    progress: 85,
-  },
-  {
-    id: 2,
-    user: {
-      name: "David Kim",
-      avatar: "/placeholder.svg?height=40&width=40",
-    },
-    points: 1120,
-    rank: 2,
-    achievements: ["5K Runner", "Nutrition Master", "Early Bird"],
-    progress: 78,
-  },
-  {
-    id: 3,
-    user: {
-      name: "Alex Johnson",
-      avatar: "/placeholder.svg?height=40&width=40",
-    },
-    points: 980,
-    rank: 3,
-    achievements: ["Gym Rat", "Protein Pro", "Weekend Warrior"],
-    progress: 65,
-  },
-  {
-    id: 4,
-    user: {
-      name: "Emma Rodriguez",
-      avatar: "/placeholder.svg?height=40&width=40",
-    },
-    points: 870,
-    rank: 4,
-    achievements: ["Yoga Master", "Meditation Guru", "Healthy Eater"],
-    progress: 58,
-  },
-  {
-    id: 5,
-    user: {
-      name: "Mike Chen",
-      avatar: "/placeholder.svg?height=40&width=40",
-    },
-    points: 750,
-    rank: 5,
-    achievements: ["Weight Lifter", "Protein Champion", "Gym Regular"],
-    progress: 50,
-  },
-]
+// Default empty rankings array (will be populated from API)
+const defaultRankings: any[] = []
 
 export function Community() {
 
@@ -289,10 +233,15 @@ export function Community() {
   const [lastConnectionRequestTimestamp, setLastConnectionRequestTimestamp] = useState<string | null>(null)
   const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(null)
 
-  // State for posts, groups, and partners from API
+  // State for posts, groups, partners, and rankings from API
   const [posts, setPosts] = useState<any[]>(defaultPosts)
   const [groups, setGroups] = useState<any[]>(defaultGroups)
   const [partners, setPartners] = useState<any[]>(defaultPartners)
+  const [rankings, setRankings] = useState<any[]>([])
+  const [rankingPeriod, setRankingPeriod] = useState<string>("weekly")
+  const [userAchievements, setUserAchievements] = useState<Record<number, string[]>>({})
+  const [userProgress, setUserProgress] = useState<Record<number, number>>({})
+  const [isLoadingRankings, setIsLoadingRankings] = useState<boolean>(false)
 
   // Get current user from localStorage
   useEffect(() => {
@@ -351,6 +300,121 @@ export function Community() {
       fetchPartners();
     }
   }, [currentUser]);
+
+  // Fetch rankings when tab changes or period changes
+  useEffect(() => {
+    if (activeTab === "rankings") {
+      fetchRankings();
+    }
+  }, [activeTab, rankingPeriod]);
+
+  // Function to fetch rankings based on selected period
+  const fetchRankings = async () => {
+    setIsLoadingRankings(true);
+    try {
+      const response = await axios.get(`http://localhost:5000/api/rankings/fetch_rankings_by_period`, {
+        params: { period: rankingPeriod }
+      });
+
+      if (response.data && Array.isArray(response.data)) {
+        setRankings(response.data);
+
+        // Fetch achievements and progress for top users
+        const topUserIds = response.data.slice(0, 5).map((user: any) => user.user_id);
+        fetchUserAchievementsAndProgress(topUserIds);
+      }
+    } catch (error) {
+      console.error("Error fetching rankings:", error);
+
+      // If the API call fails, try the default endpoint
+      try {
+        const fallbackResponse = await axios.get(`http://localhost:5000/api/rankings/fetch_rankings`);
+        if (fallbackResponse.data && Array.isArray(fallbackResponse.data)) {
+          setRankings(fallbackResponse.data);
+
+          // Fetch achievements and progress for top users
+          const topUserIds = fallbackResponse.data.slice(0, 5).map((user: any) => user.user_id);
+          fetchUserAchievementsAndProgress(topUserIds);
+        }
+      } catch (fallbackError) {
+        console.error("Error fetching rankings (fallback):", fallbackError);
+        toast({
+          title: "Error",
+          description: "Failed to load rankings. Please try again.",
+          variant: "destructive"
+        });
+      }
+    } finally {
+      setIsLoadingRankings(false);
+    }
+  };
+
+  // Function to fetch achievements and progress for top users
+  const fetchUserAchievementsAndProgress = async (userIds: number[]) => {
+    try {
+      // Fetch achievements for each user
+      const achievementsPromises = userIds.map(userId =>
+        axios.get(`http://localhost:5000/api/rankings/fetch_user_achievements/${userId}`)
+        
+          .catch(error => {
+            console.error(`Error fetching achievements for user ${userId}:`, error);
+            return { data: ["FitFaat Member"] }; // Default achievement if API fails
+          })
+      );
+
+      // Fetch progress for each user
+      const progressPromises = userIds.map(userId =>
+        axios.get(`http://localhost:5000/api/rankings/fetch_user_progress/${userId}`)
+          .catch(error => {
+            console.error(`Error fetching progress for user ${userId}:`, error);
+            return { data: { progress: 0 } }; // Default progress if API fails
+          })
+      );
+
+      // Wait for all requests to complete
+      const achievementsResponses = await Promise.all(achievementsPromises);
+      const progressResponses = await Promise.all(progressPromises);
+
+      // Process achievements
+      const newAchievements: Record<number, string[]> = {};
+      achievementsResponses.forEach((response, index) => {
+        if (response.data && Array.isArray(response.data)) {
+          newAchievements[userIds[index]] = response.data;
+        } else {
+          newAchievements[userIds[index]] = ["FitFaat Member"];
+        }
+      });
+
+      // Process progress
+      const newProgress: Record<number, number> = {};
+      progressResponses.forEach((response, index) => {
+        if (response.data && typeof response.data.progress === 'number') {
+          newProgress[userIds[index]] = response.data.progress;
+        } else {
+          newProgress[userIds[index]] = 0;
+        }
+      });
+
+      // Update state
+      setUserAchievements(newAchievements);
+      setUserProgress(newProgress);
+
+    } catch (error) {
+      console.error("Error fetching user achievements and progress:", error);
+
+      // Set default values for all users if the entire process fails
+      const defaultAchievements: Record<number, string[]> = {};
+      const defaultProgress: Record<number, number> = {};
+
+      userIds.forEach(userId => {
+        defaultAchievements[userId] = ["FitFaat Member"];
+        defaultProgress[userId] = 0;
+      });
+
+      setUserAchievements(defaultAchievements);
+      setUserProgress(defaultProgress);
+    }
+  };
 
   // Function to calculate bounds for all markers
   const calculateBounds = (locations: Array<{ location: { lat: number, lng: number } }>) => {
@@ -3097,9 +3161,17 @@ export function Community() {
           <div className="flex justify-between items-center">
             <div>
               <h2 className="text-xl font-semibold">Community Rankings</h2>
-              <p className="text-sm text-muted-foreground">See who's leading the fitness community this week</p>
+              <p className="text-sm text-muted-foreground">
+                See who's leading the fitness community
+                {rankingPeriod === "weekly" ? " this week" :
+                 rankingPeriod === "monthly" ? " this month" :
+                 " of all time"}
+              </p>
             </div>
-            <Select defaultValue="weekly">
+            <Select
+              value={rankingPeriod}
+              onValueChange={(value) => setRankingPeriod(value)}
+            >
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Select period" />
               </SelectTrigger>
@@ -3111,112 +3183,172 @@ export function Community() {
             </Select>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-3">
-            {rankings.slice(0, 3).map((user) => (
-              <Card
-                key={user.id}
-                className={`border-${user.rank === 1 ? "yellow" : user.rank === 2 ? "gray" : "amber"}-500/50`}
-              >
-                <CardHeader className="pb-2">
-                  <div className="flex justify-between items-start">
-                    <div className="flex items-center gap-3">
-                      <div
-                        className={`flex items-center justify-center w-8 h-8 rounded-full ${user.rank === 1 ? "bg-yellow-500" : user.rank === 2 ? "bg-gray-400" : "bg-amber-700"
-                          } text-white font-bold`}
-                      >
-                        {user.rank}
-                      </div>
-                      <Avatar>
-                        <AvatarImage src={user.user.avatar || "/placeholder.svg"} alt={user.user.name} />
-                        <AvatarFallback>{user.user.name.charAt(0)}</AvatarFallback>
-                      </Avatar>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Trophy
-                        className={`h-4 w-4 ${user.rank === 1 ? "text-yellow-500" : user.rank === 2 ? "text-gray-400" : "text-amber-700"
-                          }`}
-                      />
-                      <span className="font-bold">{user.points}</span>
-                      <span className="text-xs text-muted-foreground">pts</span>
-                    </div>
-                  </div>
-                  <CardTitle className="text-lg mt-2">{user.user.name}</CardTitle>
+          {isLoadingRankings ? (
+            <div className="flex justify-center items-center py-12">
+              <Loader className="h-8 w-8 animate-spin text-primary" />
+              <span className="ml-2">Loading rankings...</span>
+            </div>
+          ) : rankings.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <Trophy className="h-12 w-12 text-muted-foreground mb-4" />
+              <h3 className="text-lg font-medium">No Rankings Available</h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                There are no rankings available for this period yet.
+              </p>
+            </div>
+          ) : (
+            <>
+              <div className="grid gap-4 md:grid-cols-3">
+                {rankings.slice(0, 3).map((user) => {
+                  // Get user's full name
+                  const userName = `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username || 'User';
+
+                  // Get user's achievements
+                  const achievements = userAchievements[user.user_id] || ["FitFaat Member"];
+
+                  // Get user's progress
+                  const progress = userProgress[user.user_id] || 0;
+
+                  return (
+                    <Card
+                      key={user.user_id}
+                      className={`border-${user.rank === 1 ? "yellow" : user.rank === 2 ? "gray" : "amber"}-500/50`}
+                    >
+                      <CardHeader className="pb-2">
+                        <div className="flex justify-between items-start">
+                          <div className="flex items-center gap-3">
+                            <div
+                              className={`flex items-center justify-center w-8 h-8 rounded-full ${
+                                user.rank === 1 ? "bg-yellow-500" :
+                                user.rank === 2 ? "bg-gray-400" :
+                                "bg-amber-700"
+                              } text-white font-bold`}
+                            >
+                              {user.rank}
+                            </div>
+                            <Avatar>
+                              <AvatarImage src={user.profile_picture || "/placeholder.svg"} alt={userName} />
+                              <AvatarFallback>{userName.charAt(0)}</AvatarFallback>
+                            </Avatar>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Trophy
+                              className={`h-4 w-4 ${
+                                user.rank === 1 ? "text-yellow-500" :
+                                user.rank === 2 ? "text-gray-400" :
+                                "text-amber-700"
+                              }`}
+                            />
+                            <span className="font-bold">{user.points}</span>
+                            <span className="text-xs text-muted-foreground">pts</span>
+                          </div>
+                        </div>
+                        <CardTitle className="text-lg mt-2">{userName}</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-4">
+                          <div>
+                            <div className="flex justify-between text-sm mb-1">
+                              <span>Weekly Progress</span>
+                              <span>{progress}%</span>
+                            </div>
+                            <div className="h-2 bg-secondary rounded-full overflow-hidden">
+                              <div
+                                className={`h-full ${
+                                  user.rank === 1 ? "bg-yellow-500" :
+                                  user.rank === 2 ? "bg-gray-400" :
+                                  "bg-amber-700"
+                                }`}
+                                style={{ width: `${progress}%` }}
+                              />
+                            </div>
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium mb-2">Achievements</p>
+                            <div className="flex flex-wrap gap-1">
+                              {achievements.map((achievement: string, index: number) => (
+                                <Badge key={index} variant="secondary" className="text-xs">
+                                  {achievement}
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Leaderboard</CardTitle>
+                  <CardDescription>
+                    Top performers in the community
+                    {rankingPeriod === "weekly" ? " this week" :
+                     rankingPeriod === "monthly" ? " this month" :
+                     " of all time"}
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
-                    <div>
-                      <div className="flex justify-between text-sm mb-1">
-                        <span>Weekly Progress</span>
-                        <span>{user.progress}%</span>
-                      </div>
-                      <div className="h-2 bg-secondary rounded-full overflow-hidden">
-                        <div
-                          className={`h-full ${user.rank === 1 ? "bg-yellow-500" : user.rank === 2 ? "bg-gray-400" : "bg-amber-700"
-                            }`}
-                          style={{ width: `${user.progress}%` }}
-                        />
-                      </div>
-                    </div>
+                  <div className="space-y-2">
+                    {rankings.map((user) => {
+                      // Get user's full name
+                      const userName = `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username || 'User';
 
-                    <div>
-                      <p className="text-sm font-medium mb-2">Achievements</p>
-                      <div className="flex flex-wrap gap-1">
-                        {user.achievements.map((achievement, index) => (
-                          <Badge key={index} variant="secondary" className="text-xs">
-                            {achievement}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
+                      return (
+                        <div
+                          key={user.user_id}
+                          className={`flex items-center p-3 rounded-md ${user.rank <= 3 ? "bg-muted" : ""}`}
+                        >
+                          <div
+                            className={`flex items-center justify-center w-6 h-6 rounded-full ${
+                              user.rank === 1 ? "bg-yellow-500" :
+                              user.rank === 2 ? "bg-gray-400" :
+                              user.rank === 3 ? "bg-amber-700" :
+                              "bg-secondary"
+                            } text-white text-xs font-bold mr-3`}
+                          >
+                            {user.rank}
+                          </div>
+                          <Avatar className="h-8 w-8 mr-3">
+                            <AvatarImage src={user.profile_picture || "/placeholder.svg"} alt={userName} />
+                            <AvatarFallback>{userName.charAt(0)}</AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium truncate">{userName}</p>
+                            <p className="text-xs text-muted-foreground">{user.rank_title || "Fitness Enthusiast"}</p>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Trophy className="h-4 w-4 text-muted-foreground" />
+                            <span className="font-medium">{user.points}</span>
+                            <span className="text-xs text-muted-foreground">pts</span>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </CardContent>
+                <CardFooter>
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => fetchRankings()}
+                    disabled={isLoadingRankings}
+                  >
+                    {isLoadingRankings ? (
+                      <>
+                        <Loader className="h-4 w-4 animate-spin mr-2" />
+                        Loading...
+                      </>
+                    ) : (
+                      "Refresh Leaderboard"
+                    )}
+                  </Button>
+                </CardFooter>
               </Card>
-            ))}
-          </div>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Leaderboard</CardTitle>
-              <CardDescription>Top performers in the community</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                {rankings.map((user) => (
-                  <div key={user.id} className={`flex items-center p-3 rounded-md ${user.rank <= 3 ? "bg-muted" : ""}`}>
-                    <div
-                      className={`flex items-center justify-center w-6 h-6 rounded-full ${user.rank === 1
-                        ? "bg-yellow-500"
-                        : user.rank === 2
-                          ? "bg-gray-400"
-                          : user.rank === 3
-                            ? "bg-amber-700"
-                            : "bg-secondary"
-                        } text-white text-xs font-bold mr-3`}
-                    >
-                      {user.rank}
-                    </div>
-                    <Avatar className="h-8 w-8 mr-3">
-                      <AvatarImage src={user.user.avatar || "/placeholder.svg"} alt={user.user.name} />
-                      <AvatarFallback>{user.user.name.charAt(0)}</AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1">
-                      <p className="font-medium">{user.user.name}</p>
-                      <div className="flex items-center text-xs text-muted-foreground">
-                        <span>{user.achievements[0]}</span>
-                        {user.achievements.length > 1 && <span> +{user.achievements.length - 1} more</span>}
-                      </div>
-                    </div>
-                    <div className="font-bold">{user.points}</div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-            <CardFooter>
-              <Button variant="outline" className="w-full">
-                View Full Leaderboard
-              </Button>
-            </CardFooter>
-          </Card>
+            </>
+          )}
         </TabsContent>
       </Tabs>
       {/* Floating Chat System */}

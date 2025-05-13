@@ -12,47 +12,44 @@ export function useAuth() {
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
   const router = useRouter()
   const pathname = usePathname()
 
-  // Create a mock user
-  const mockUser = {
-    id: "mock-user-id",
-    email: "demo@example.com",
-    name: "Demo User",
-    avatar_url: null,
-  }
-
   useEffect(() => {
     const checkAuthStatus = async () => {
+      setLoading(true);
       try {
-        // First check if user is stored in localStorage
-        const storedUser = localStorage.getItem("fitfaat_user")
+        // Check if user data exists in localStorage
+        const storedUser = localStorage.getItem("fitfaat_user");
         if (storedUser) {
-          setUser(JSON.parse(storedUser))
+          const userData = JSON.parse(storedUser);
+          setUser(userData);
+          setIsAuthenticated(true);
+          setLoading(false);
+          return;
         }
 
-        // Then verify with the server if the JWT token is valid
+        // Try to fetch user data from server
         const response = await fetch("http://localhost:5000/auth/me", {
           method: "GET",
           credentials: "include",
         });
 
         if (response.ok) {
-          const data = await response.json();
-          if (data && data.user) {
-            // Update user data with the latest from server
-            setUser(data.user);
-            localStorage.setItem("fitfaat_user", JSON.stringify(data.user));
-          }
+          const userData = await response.json();
+          setUser(userData);
+          setIsAuthenticated(true);
+          localStorage.setItem("fitfaat_user", JSON.stringify(userData));
         } else {
-          // If token is invalid, clear user data
-          localStorage.removeItem("fitfaat_user");
           setUser(null);
+          setIsAuthenticated(false);
+          localStorage.removeItem("fitfaat_user");
         }
       } catch (error) {
-        console.error("Auth check error:", error);
-        // Don't clear user data on network errors to allow offline usage
+        console.error("Authentication check failed:", error);
+        setUser(null);
+        setIsAuthenticated(false);
       } finally {
         setLoading(false);
       }
@@ -256,11 +253,16 @@ export function AuthProvider({ children }) {
 
   const value = {
     user,
+    loading,
+    isAuthenticated,
     login,
-    signup,
     logout,
-    isAuthenticated: !!user,
-  }
+    signup
+  };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+    </AuthContext.Provider>
+  );
 }

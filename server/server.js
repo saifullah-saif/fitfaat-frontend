@@ -28,6 +28,10 @@ const communityRoutes = require("./routes/communityRoutes.js");
 const adminContentRoutes = require("./routes/admin-contentRoutes.js");
 const adminGroupRoutes = require("./routes/admin-groupRoutes.js");
 
+const exerciseRoutes = require("./routes/exerciseRoutes.js");
+const workoutRoutes = require("./routes/workoutRoutes.js");
+const gymRoutes = require("./routes/gymRoutes.js");
+const rankingRoutes = require("./routes/rankingRoutes.js");
 
 const app = express();
 app.use(
@@ -50,6 +54,9 @@ app.use(bodyParser.urlencoded({ extended: true })); // For parsing application/x
 // Serve static files from the uploads directory
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+app.use(bodyParser.json());
+
+app.use("/auth", authRoutes);
 // ✅ Routes
 
 app.use("/api/admin/users", adminUsersRoutes);
@@ -70,6 +77,11 @@ app.use("/auth", authRoutes);
 app.use("/community", communityRoutes);
 app.use("/admin-content", adminContentRoutes);
 app.use("/admin-group", adminGroupRoutes);
+app.use("/api/auth", authRoutes);
+app.use("/api/exercises", exerciseRoutes);
+app.use("/api/workouts", workoutRoutes);
+app.use("/api/gyms", gymRoutes);
+app.use("/api/rankings", rankingRoutes);
 
 
 // ✅ Global Error Handling Middleware
@@ -81,5 +93,3 @@ app.use((err, req, res, next) => {
 app.listen(5000, () => {
   console.log("Server started on port 5000");
 });
-
-

@@ -1,4 +1,3 @@
-
 const jwt = require('jsonwebtoken');
 
 // Secret key for JWT - in production, this should be in an environment variable
@@ -43,7 +42,8 @@ const generateToken = (user) => {
   const userData = {
     id: user.user_id || user.id, // Use user_id from DB or id if already transformed
     email: user.email,
-    name: user.first_name ? `${user.first_name} ${user.last_name || ''}`.trim() : user.name || user.username
+    name: user.first_name ? `${user.first_name} ${user.last_name || ''}`.trim() : user.name || user.username,
+    role: user.role || 'User' // Include user role, default to 'User' if not provided
   };
 
   console.log("Generating token with user data:", userData);

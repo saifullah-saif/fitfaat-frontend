@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -16,264 +16,289 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Search, MoreHorizontal, Check, X, Eye, Calendar, Users, MapPin, Clock, AlertCircle } from "lucide-react"
+import {
+  Search,
+  MoreHorizontal,
+  Check,
+  X,
+  Eye,
+  Calendar,
+  Users,
+  MapPin,
+  Clock,
+  AlertCircle,
+  Loader2,
+  ChevronLeft,
+  ChevronRight,
+  Edit,
+  Image
+} from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-
-// Mock data for existing groups
-const existingGroups = [
-  {
-    id: 1,
-    name: "Morning Runners Club",
-    members: 128,
-    description: "Group for early morning runners. We organize weekly group runs.",
-    image: "/placeholder.svg?height=100&width=100",
-    location: "Dhaka, Bangladesh",
-    nextEvent: "Saturday, 6:00 AM - Gulshan Park",
-    status: "active",
-    createdAt: "2023-05-15",
-  },
-  {
-    id: 2,
-    name: "Vegan Fitness",
-    members: 95,
-    description: "Plant-based diet and fitness tips for optimal health.",
-    image: "/placeholder.svg?height=100&width=100",
-    location: "Online",
-    nextEvent: "Wednesday, 7:00 PM - Zoom Nutrition Workshop",
-    status: "active",
-    createdAt: "2023-06-22",
-  },
-  {
-    id: 3,
-    name: "Weekend Warriors",
-    members: 210,
-    description: "For those who pack their workouts into the weekend.",
-    image: "/placeholder.svg?height=100&width=100",
-    location: "Dhaka, Bangladesh",
-    nextEvent: "Sunday, 8:00 AM - Hatirjheel Lake Trail",
-    status: "active",
-    createdAt: "2023-04-10",
-  },
-]
-
-// Mock data for group creation requests
-const groupRequests = [
-  {
-    id: 101,
-    name: "Yoga Enthusiasts",
-    description: "A group for yoga practitioners of all levels to connect and share experiences.",
-    creator: {
-      id: 42,
-      name: "Maya Rahman",
-      avatar: "/placeholder.svg?height=40&width=40",
-    },
-    location: "Dhaka, Bangladesh",
-    members: 1,
-    requestDate: "2023-09-15",
-    status: "pending",
-  },
-  {
-    id: 102,
-    name: "Cycling Club Dhaka",
-    description: "For cycling enthusiasts in Dhaka to organize group rides and share routes.",
-    creator: {
-      id: 56,
-      name: "Rafiq Ahmed",
-      avatar: "/placeholder.svg?height=40&width=40",
-    },
-    location: "Dhaka, Bangladesh",
-    members: 1,
-    requestDate: "2023-09-18",
-    status: "pending",
-  },
-  {
-    id: 103,
-    name: "Strength Training 101",
-    description: "Learn proper form and techniques for strength training exercises.",
-    creator: {
-      id: 78,
-      name: "Tasneem Khan",
-      avatar: "/placeholder.svg?height=40&width=40",
-    },
-    location: "Online",
-    members: 1,
-    requestDate: "2023-09-20",
-    status: "pending",
-  },
-]
-
-// Mock data for event creation requests
-const eventRequests = [
-  {
-    id: 201,
-    title: "5K Fun Run",
-    description: "A beginner-friendly 5K run around Gulshan Lake.",
-    creator: {
-      id: 34,
-      name: "Imran Hossain",
-      avatar: "/placeholder.svg?height=40&width=40",
-    },
-    group: {
-      id: 1,
-      name: "Morning Runners Club",
-    },
-    location: "Gulshan Lake, Dhaka",
-    date: "2023-10-15T06:00:00",
-    duration: "1 hour",
-    maxParticipants: 30,
-    requestDate: "2023-09-22",
-    status: "pending",
-  },
-  {
-    id: 202,
-    title: "Plant-Based Protein Workshop",
-    description: "Learn about plant-based protein sources and how to incorporate them into your diet.",
-    creator: {
-      id: 45,
-      name: "Nadia Islam",
-      avatar: "/placeholder.svg?height=40&width=40",
-    },
-    group: {
-      id: 2,
-      name: "Vegan Fitness",
-    },
-    location: "Online (Zoom)",
-    date: "2023-10-18T19:00:00",
-    duration: "1.5 hours",
-    maxParticipants: 50,
-    requestDate: "2023-09-23",
-    status: "pending",
-  },
-  {
-    id: 203,
-    title: "Hatirjheel Trail Run",
-    description: "A challenging trail run around Hatirjheel Lake.",
-    creator: {
-      id: 67,
-      name: "Kamal Hasan",
-      avatar: "/placeholder.svg?height=40&width=40",
-    },
-    group: {
-      id: 3,
-      name: "Weekend Warriors",
-    },
-    location: "Hatirjheel Lake, Dhaka",
-    date: "2023-10-22T07:30:00",
-    duration: "2 hours",
-    maxParticipants: 25,
-    requestDate: "2023-09-24",
-    status: "pending",
-  },
-]
+import { Textarea } from "@/components/ui/textarea"
+import { Label } from "@/components/ui/label"
+import axios from "axios"
 
 export function CommunityManagement() {
   const [activeTab, setActiveTab] = useState("groups")
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   const [viewGroupDetails, setViewGroupDetails] = useState(null)
-  const [viewEventDetails, setViewEventDetails] = useState(null)
   const [viewGroupRequestDetails, setViewGroupRequestDetails] = useState(null)
-  const [viewEventRequestDetails, setViewEventRequestDetails] = useState(null)
 
   // State for managing the lists
-  const [groups, setGroups] = useState(existingGroups)
-  const [pendingGroups, setPendingGroups] = useState(groupRequests)
-  const [pendingEvents, setPendingEvents] = useState(eventRequests)
+  const [groups, setGroups] = useState([])
+  const [pendingGroups, setPendingGroups] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [loadingAction, setLoadingAction] = useState(false)
 
-  // Filter functions
-  const filteredGroups = groups.filter((group) => {
-    const matchesSearch =
-      group.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      group.description.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesStatus = statusFilter === "all" || group.status === statusFilter
-    return matchesSearch && matchesStatus
+  // Pagination state
+  const [groupsPagination, setGroupsPagination] = useState({
+    page: 1,
+    limit: 10,
+    total: 0,
+    totalPages: 0
+  })
+  const [pendingPagination, setPendingPagination] = useState({
+    page: 1,
+    limit: 10,
+    total: 0,
+    totalPages: 0
   })
 
-  const filteredGroupRequests = pendingGroups.filter((request) => {
-    return (
-      request.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      request.description.toLowerCase().includes(searchQuery.toLowerCase())
-    )
-  })
+  // Group editing state
+  const [editGroupDetails, setEditGroupDetails] = useState(null)
 
-  const filteredEventRequests = pendingEvents.filter((request) => {
-    return (
-      request.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      request.description.toLowerCase().includes(searchQuery.toLowerCase())
-    )
-  })
-
-  // Handle group request approval/rejection
-  const handleGroupRequest = (requestId, approved) => {
-    const request = pendingGroups.find((req) => req.id === requestId)
-
-    if (approved) {
-      // Add to active groups
-      const newGroup = {
-        ...request,
-        id: groups.length + 1,
-        status: "active",
-        createdAt: new Date().toISOString().split("T")[0],
-        nextEvent: "No upcoming events",
-      }
-      setGroups([...groups, newGroup])
-
-      toast({
-        title: "Group approved",
-        description: `"${request.name}" has been approved and is now active.`,
+  // Fetch groups with pagination
+  const fetchGroups = async (page = 1, limit = 10, status = statusFilter, search = searchQuery) => {
+    setLoading(true)
+    try {
+      // Fetch active/inactive groups
+      const groupsResponse = await axios.get('http://localhost:5000/admin-group/allGroups', {
+        params: { page, limit, status, search },
+        withCredentials: true
       })
-    } else {
+
+      setGroups(groupsResponse.data.groups)
+      setGroupsPagination(groupsResponse.data.pagination)
+
+      return groupsResponse.data
+    } catch (error) {
+      console.error('Error fetching groups:', error)
       toast({
-        title: "Group rejected",
-        description: `"${request.name}" request has been rejected.`,
+        title: "Error",
+        description: "Failed to load groups. Please try again.",
+        variant: "destructive"
       })
+      return null
+    } finally {
+      setLoading(false)
     }
-
-    // Remove from pending requests
-    setPendingGroups(pendingGroups.filter((req) => req.id !== requestId))
-    setViewGroupRequestDetails(null)
   }
 
-  // Handle event request approval/rejection
-  const handleEventRequest = (requestId, approved) => {
-    const request = pendingEvents.find((req) => req.id === requestId)
+  // Fetch pending groups with pagination
+  const fetchPendingGroups = async (page = 1, limit = 10, search = searchQuery) => {
+    setLoading(true)
+    try {
+      // Fetch pending group requests
+      const pendingResponse = await axios.get('http://localhost:5000/admin-group/pendingGroups', {
+        params: { page, limit, search },
+        withCredentials: true
+      })
 
-    if (approved) {
-      // Update the group's next event
-      const updatedGroups = groups.map((group) => {
-        if (group.id === request.group.id) {
-          const eventDate = new Date(request.date)
-          const formattedDate = eventDate.toLocaleDateString("en-US", {
-            weekday: "long",
-            hour: "2-digit",
-            minute: "2-digit",
-          })
-          return {
-            ...group,
-            nextEvent: `${formattedDate} - ${request.title}`,
-          }
+      setPendingGroups(pendingResponse.data.groups)
+      setPendingPagination(pendingResponse.data.pagination)
+
+      return pendingResponse.data
+    } catch (error) {
+      console.error('Error fetching pending groups:', error)
+      toast({
+        title: "Error",
+        description: "Failed to load pending group requests. Please try again.",
+        variant: "destructive"
+      })
+      return null
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Fetch all groups and pending groups on component mount
+  useEffect(() => {
+    const loadInitialData = async () => {
+      await fetchGroups()
+      await fetchPendingGroups()
+    }
+
+    loadInitialData()
+  }, [])
+
+  // Refetch when search or status filter changes
+  useEffect(() => {
+    if (activeTab === "groups") {
+      fetchGroups(1, groupsPagination.limit, statusFilter, searchQuery)
+    } else if (activeTab === "group-requests") {
+      fetchPendingGroups(1, pendingPagination.limit, searchQuery)
+    }
+  }, [searchQuery, statusFilter, activeTab])
+
+  // Handle pagination for groups
+  const handleGroupsPageChange = (newPage) => {
+    fetchGroups(newPage, groupsPagination.limit, statusFilter, searchQuery)
+  }
+
+  // Handle pagination for pending groups
+  const handlePendingPageChange = (newPage) => {
+    fetchPendingGroups(newPage, pendingPagination.limit, searchQuery)
+  }
+
+  // We no longer need to filter groups locally since the API handles filtering
+  // This is just for backward compatibility with the existing code
+  const filteredGroups = groups
+  const filteredGroupRequests = pendingGroups
+
+  // Handle group editing
+  const handleEditGroup = async () => {
+    if (!editGroupDetails) return
+
+    setLoadingAction(true)
+    try {
+      const response = await axios.put(
+        `http://localhost:5000/admin-group/updateGroup/${editGroupDetails.id}`,
+        {
+          name: editGroupDetails.name,
+          description: editGroupDetails.description,
+          location: editGroupDetails.location
+        },
+        { withCredentials: true }
+      )
+
+      // Update the group in the state
+      const updatedGroups = groups.map(g => {
+        if (g.id === editGroupDetails.id) {
+          return response.data.group
         }
-        return group
+        return g
       })
 
       setGroups(updatedGroups)
 
-      toast({
-        title: "Event approved",
-        description: `"${request.title}" has been approved and added to the group calendar.`,
-      })
-    } else {
-      toast({
-        title: "Event rejected",
-        description: `"${request.title}" event request has been rejected.`,
-      })
-    }
+      // If we're viewing the group details, update that too
+      if (viewGroupDetails && viewGroupDetails.id === editGroupDetails.id) {
+        setViewGroupDetails(response.data.group)
+      }
 
-    // Remove from pending requests
-    setPendingEvents(pendingEvents.filter((req) => req.id !== requestId))
-    setViewEventRequestDetails(null)
+      // Clear the edit state
+      setEditGroupDetails(null)
+
+      toast({
+        title: "Group Updated",
+        description: "The group has been updated successfully.",
+      })
+    } catch (error) {
+      console.error('Error updating group:', error)
+      toast({
+        title: "Error",
+        description: "Failed to update the group. Please try again.",
+        variant: "destructive"
+      })
+    } finally {
+      setLoadingAction(false)
+    }
   }
+
+  // Handle group request approval/rejection
+  const handleGroupRequest = async (requestId, approved) => {
+    setLoadingAction(true)
+    const request = pendingGroups.find((req) => req.id === requestId)
+
+    try {
+      if (approved) {
+        // Approve the group
+        await axios.put(`http://localhost:5000/admin-group/approveGroup/${requestId}`, {}, {
+          withCredentials: true
+        })
+
+        // Fetch the updated group to add to the groups list
+        const groupResponse = await axios.get(`http://localhost:5000/admin-group/group/${requestId}`, {
+          withCredentials: true
+        })
+
+        setGroups([...groups, groupResponse.data])
+
+        toast({
+          title: "Group approved",
+          description: `"${request.name}" has been approved and is now active.`,
+        })
+      } else {
+        // Reject the group
+        await axios.put(`http://localhost:5000/admin-group/rejectGroup/${requestId}`, {}, {
+          withCredentials: true
+        })
+
+        toast({
+          title: "Group rejected",
+          description: `"${request.name}" request has been rejected.`,
+        })
+      }
+
+      // Remove from pending requests
+      setPendingGroups(pendingGroups.filter((req) => req.id !== requestId))
+      setViewGroupRequestDetails(null)
+    } catch (error) {
+      console.error('Error handling group request:', error)
+      toast({
+        title: "Error",
+        description: `Failed to ${approved ? 'approve' : 'reject'} the group. Please try again.`,
+        variant: "destructive"
+      })
+    } finally {
+      setLoadingAction(false)
+    }
+  }
+
+  // Toggle group status (activate/deactivate)
+  const handleToggleGroupStatus = async (groupId) => {
+    setLoadingAction(true)
+    const group = groups.find((g) => g.id === groupId)
+
+    try {
+      // Call the API to toggle the group status
+      const response = await axios.put(`http://localhost:5000/admin-group/toggleStatus/${groupId}`, {}, {
+        withCredentials: true
+      })
+
+      // Update the group in the state
+      const updatedGroups = groups.map((g) => {
+        if (g.id === groupId) {
+          return { ...g, status: response.data.newStatus }
+        }
+        return g
+      })
+
+      setGroups(updatedGroups)
+
+      // If we're viewing the group details, update that too
+      if (viewGroupDetails && viewGroupDetails.id === groupId) {
+        setViewGroupDetails({ ...viewGroupDetails, status: response.data.newStatus })
+      }
+
+      toast({
+        title: response.data.newStatus === 'active' ? "Group Activated" : "Group Deactivated",
+        description: `"${group.name}" has been ${response.data.newStatus === 'active' ? 'activated' : 'deactivated'}.`,
+      })
+    } catch (error) {
+      console.error('Error toggling group status:', error)
+      toast({
+        title: "Error",
+        description: "Failed to update group status. Please try again.",
+        variant: "destructive"
+      })
+    } finally {
+      setLoadingAction(false)
+    }
+  }
+
 
   return (
     <div className="space-y-6">
@@ -302,23 +327,18 @@ export function CommunityManagement() {
           </Select>
         </div>
 
-        <div className="flex items-center gap-2">
-          <Badge variant="outline" className="flex gap-1">
-            <AlertCircle className="h-3.5 w-3.5" />
-            <span>{pendingGroups.length} Group Requests</span>
-          </Badge>
-          <Badge variant="outline" className="flex gap-1">
-            <Calendar className="h-3.5 w-3.5" />
-            <span>{pendingEvents.length} Event Requests</span>
-          </Badge>
-        </div>
+
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="groups">Groups</TabsTrigger>
-          <TabsTrigger value="group-requests">Group Requests</TabsTrigger>
-          <TabsTrigger value="event-requests">Event Requests</TabsTrigger>
+          <TabsTrigger value="group-requests">
+            Group Requests
+            {pendingGroups.length > 0 && (
+              <Badge variant="destructive" className="ml-4">{pendingGroups.length}</Badge>
+            )}
+          </TabsTrigger>
         </TabsList>
 
         {/* Existing Groups Tab */}
@@ -336,7 +356,16 @@ export function CommunityManagement() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredGroups.length === 0 ? (
+                {loading ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center h-24">
+                      <div className="flex justify-center items-center">
+                        <Loader2 className="h-6 w-6 animate-spin mr-2" />
+                        <span>Loading groups...</span>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ) : filteredGroups.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={6} className="text-center h-24 text-muted-foreground">
                       No groups found
@@ -372,13 +401,22 @@ export function CommunityManagement() {
                               <Eye className="mr-2 h-4 w-4" />
                               View Details
                             </DropdownMenuItem>
-                            <DropdownMenuItem>
-                              <Users className="mr-2 h-4 w-4" />
-                              Manage Members
+                            <DropdownMenuItem onClick={() => setEditGroupDetails({...group})}>
+                              <Edit className="mr-2 h-4 w-4" />
+                              Edit Group
                             </DropdownMenuItem>
-                            <DropdownMenuItem>
-                              <Calendar className="mr-2 h-4 w-4" />
-                              View Events
+                            <DropdownMenuItem onClick={() => handleToggleGroupStatus(group.id)}>
+                              {group.status === "active" ? (
+                                <>
+                                  <X className="mr-2 h-4 w-4 text-red-500" />
+                                  <span className="text-red-500">Deactivate Group</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Check className="mr-2 h-4 w-4 text-green-500" />
+                                  <span className="text-green-500">Activate Group</span>
+                                </>
+                              )}
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -405,7 +443,16 @@ export function CommunityManagement() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredGroupRequests.length === 0 ? (
+                {loading ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center h-24">
+                      <div className="flex justify-center items-center">
+                        <Loader2 className="h-6 w-6 animate-spin mr-2" />
+                        <span>Loading requests...</span>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ) : filteredGroupRequests.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={5} className="text-center h-24 text-muted-foreground">
                       No pending group requests
@@ -436,6 +483,7 @@ export function CommunityManagement() {
                             size="sm"
                             className="h-8 w-8 p-0"
                             onClick={() => setViewGroupRequestDetails(request)}
+                            disabled={loadingAction}
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
@@ -444,16 +492,26 @@ export function CommunityManagement() {
                             size="sm"
                             className="h-8 w-8 p-0 text-green-500 hover:text-green-600"
                             onClick={() => handleGroupRequest(request.id, true)}
+                            disabled={loadingAction}
                           >
-                            <Check className="h-4 w-4" />
+                            {loadingAction ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Check className="h-4 w-4" />
+                            )}
                           </Button>
                           <Button
                             variant="outline"
                             size="sm"
                             className="h-8 w-8 p-0 text-red-500 hover:text-red-600"
                             onClick={() => handleGroupRequest(request.id, false)}
+                            disabled={loadingAction}
                           >
-                            <X className="h-4 w-4" />
+                            {loadingAction ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <X className="h-4 w-4" />
+                            )}
                           </Button>
                         </div>
                       </TableCell>
@@ -463,83 +521,61 @@ export function CommunityManagement() {
               </TableBody>
             </Table>
           </div>
+
+          {/* Pagination for Groups */}
+          {!loading && groupsPagination.totalPages > 1 && (
+            <div className="flex items-center justify-center space-x-2 mt-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleGroupsPageChange(groupsPagination.page - 1)}
+                disabled={groupsPagination.page === 1 || loading}
+              >
+                <ChevronLeft className="h-4 w-4" />
+                <span className="sr-only">Previous Page</span>
+              </Button>
+              <div className="text-sm">
+                Page {groupsPagination.page} of {groupsPagination.totalPages}
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleGroupsPageChange(groupsPagination.page + 1)}
+                disabled={groupsPagination.page === groupsPagination.totalPages || loading}
+              >
+                <ChevronRight className="h-4 w-4" />
+                <span className="sr-only">Next Page</span>
+              </Button>
+            </div>
+          )}
         </TabsContent>
 
-        {/* Event Requests Tab */}
-        <TabsContent value="event-requests" className="space-y-4">
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Event Title</TableHead>
-                  <TableHead>Group</TableHead>
-                  <TableHead className="hidden md:table-cell">Creator</TableHead>
-                  <TableHead className="hidden md:table-cell">Date</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredEventRequests.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={5} className="text-center h-24 text-muted-foreground">
-                      No pending event requests
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredEventRequests.map((request) => (
-                    <TableRow key={request.id}>
-                      <TableCell className="font-medium">{request.title}</TableCell>
-                      <TableCell>{request.group.name}</TableCell>
-                      <TableCell className="hidden md:table-cell">
-                        <div className="flex items-center gap-2">
-                          <Avatar className="h-6 w-6">
-                            <AvatarImage
-                              src={request.creator.avatar || "/placeholder.svg"}
-                              alt={request.creator.name}
-                            />
-                            <AvatarFallback>{request.creator.name.charAt(0)}</AvatarFallback>
-                          </Avatar>
-                          <span className="truncate max-w-[100px]">{request.creator.name}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="hidden md:table-cell">
-                        {new Date(request.date).toLocaleDateString()}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="h-8 w-8 p-0"
-                            onClick={() => setViewEventRequestDetails(request)}
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="h-8 w-8 p-0 text-green-500 hover:text-green-600"
-                            onClick={() => handleEventRequest(request.id, true)}
-                          >
-                            <Check className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="h-8 w-8 p-0 text-red-500 hover:text-red-600"
-                            onClick={() => handleEventRequest(request.id, false)}
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
+        {/* Pagination for Pending Groups */}
+        {!loading && activeTab === "group-requests" && pendingPagination.totalPages > 1 && (
+          <div className="flex items-center justify-center space-x-2 mt-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handlePendingPageChange(pendingPagination.page - 1)}
+              disabled={pendingPagination.page === 1 || loading}
+            >
+              <ChevronLeft className="h-4 w-4" />
+              <span className="sr-only">Previous Page</span>
+            </Button>
+            <div className="text-sm">
+              Page {pendingPagination.page} of {pendingPagination.totalPages}
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handlePendingPageChange(pendingPagination.page + 1)}
+              disabled={pendingPagination.page === pendingPagination.totalPages || loading}
+            >
+              <ChevronRight className="h-4 w-4" />
+              <span className="sr-only">Next Page</span>
+            </Button>
           </div>
-        </TabsContent>
+        )}
       </Tabs>
 
       {/* Group Details Dialog */}
@@ -590,18 +626,38 @@ export function CommunityManagement() {
                     <p className="text-sm text-muted-foreground">{viewGroupDetails.description}</p>
                   </div>
 
-                  <div className="bg-muted p-3 rounded-md">
-                    <h4 className="text-sm font-medium mb-1">Next Event</h4>
-                    <p className="text-sm">{viewGroupDetails.nextEvent}</p>
-                  </div>
+
                 </div>
               </div>
 
-              <div className="flex justify-between">
-                <Button variant="outline">Manage Members</Button>
-                <Button variant="outline">View Events</Button>
-                <Button variant={viewGroupDetails.status === "active" ? "destructive" : "default"}>
-                  {viewGroupDetails.status === "active" ? "Deactivate Group" : "Activate Group"}
+              <div className="flex justify-end">
+
+
+                <Button
+                  variant={viewGroupDetails.status === "active" ? "destructive" : "default"}
+                  onClick={() => handleToggleGroupStatus(viewGroupDetails.id)}
+                  disabled={loadingAction}
+                >
+                  {loadingAction ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      {viewGroupDetails.status === "active" ? (
+                        <>
+                          <X className="mr-2 h-4 w-4" />
+                          Deactivate Group
+                        </>
+                      ) : (
+                        <>
+                          <Check className="mr-2 h-4 w-4" />
+                          Activate Group
+                        </>
+                      )}
+                    </>
+                  )}
                 </Button>
               </div>
             </div>
@@ -666,99 +722,100 @@ export function CommunityManagement() {
               </div>
 
               <DialogFooter className="flex justify-between sm:justify-between">
-                <Button variant="destructive" onClick={() => handleGroupRequest(viewGroupRequestDetails.id, false)}>
-                  Reject Request
+                <Button
+                  variant="destructive"
+                  onClick={() => handleGroupRequest(viewGroupRequestDetails.id, false)}
+                  disabled={loadingAction}
+                >
+                  {loadingAction ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    "Reject Request"
+                  )}
                 </Button>
-                <Button onClick={() => handleGroupRequest(viewGroupRequestDetails.id, true)}>Approve Group</Button>
+                <Button
+                  onClick={() => handleGroupRequest(viewGroupRequestDetails.id, true)}
+                  disabled={loadingAction}
+                >
+                  {loadingAction ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    "Approve Group"
+                  )}
+                </Button>
               </DialogFooter>
             </div>
           )}
         </DialogContent>
       </Dialog>
 
-      {/* Event Request Details Dialog */}
-      <Dialog open={!!viewEventRequestDetails} onOpenChange={() => setViewEventRequestDetails(null)}>
+      {/* Edit Group Dialog */}
+      <Dialog open={!!editGroupDetails} onOpenChange={(open) => !open && setEditGroupDetails(null)}>
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
-            <DialogTitle>Event Request Details</DialogTitle>
-            <DialogDescription>Review the event creation request</DialogDescription>
+            <DialogTitle>Edit Group</DialogTitle>
+            <DialogDescription>Make changes to the group details</DialogDescription>
           </DialogHeader>
 
-          {viewEventRequestDetails && (
+          {editGroupDetails && (
             <div className="space-y-4">
-              <div className="space-y-3">
+              <div className="grid gap-4">
                 <div>
-                  <h3 className="text-lg font-semibold">{viewEventRequestDetails.title}</h3>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Calendar className="h-4 w-4" />
-                    <span>Requested on {viewEventRequestDetails.requestDate}</span>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between p-3 bg-muted rounded-md">
-                  <div className="flex items-center gap-3">
-                    <Avatar>
-                      <AvatarImage
-                        src={viewEventRequestDetails.creator.avatar || "/placeholder.svg"}
-                        alt={viewEventRequestDetails.creator.name}
-                      />
-                      <AvatarFallback>{viewEventRequestDetails.creator.name.charAt(0)}</AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <p className="font-medium">{viewEventRequestDetails.creator.name}</p>
-                      <p className="text-sm text-muted-foreground">Event Creator</p>
-                    </div>
-                  </div>
-                  <Badge variant="outline">{viewEventRequestDetails.group.name}</Badge>
+                  <Label htmlFor="name">Group Name</Label>
+                  <Input
+                    id="name"
+                    value={editGroupDetails.name}
+                    onChange={(e) => setEditGroupDetails({...editGroupDetails, name: e.target.value})}
+                  />
                 </div>
 
                 <div>
-                  <h4 className="text-sm font-medium mb-1">Description</h4>
-                  <p className="text-sm text-muted-foreground">{viewEventRequestDetails.description}</p>
+                  <Label htmlFor="description">Description</Label>
+                  <Textarea
+                    id="description"
+                    value={editGroupDetails.description || ''}
+                    onChange={(e) => setEditGroupDetails({...editGroupDetails, description: e.target.value})}
+                    rows={4}
+                  />
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <h4 className="text-sm font-medium mb-1">Location</h4>
-                    <div className="flex items-center gap-2 text-sm">
-                      <MapPin className="h-4 w-4 text-muted-foreground" />
-                      <span>{viewEventRequestDetails.location}</span>
-                    </div>
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-medium mb-1">Date & Time</h4>
-                    <div className="flex items-center gap-2 text-sm">
-                      <Calendar className="h-4 w-4 text-muted-foreground" />
-                      <span>{new Date(viewEventRequestDetails.date).toLocaleString()}</span>
-                    </div>
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-medium mb-1">Duration</h4>
-                    <div className="flex items-center gap-2 text-sm">
-                      <Clock className="h-4 w-4 text-muted-foreground" />
-                      <span>{viewEventRequestDetails.duration}</span>
-                    </div>
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-medium mb-1">Max Participants</h4>
-                    <div className="flex items-center gap-2 text-sm">
-                      <Users className="h-4 w-4 text-muted-foreground" />
-                      <span>{viewEventRequestDetails.maxParticipants}</span>
-                    </div>
-                  </div>
+                <div>
+                  <Label htmlFor="location">Location</Label>
+                  <Input
+                    id="location"
+                    value={editGroupDetails.location || ''}
+                    onChange={(e) => setEditGroupDetails({...editGroupDetails, location: e.target.value})}
+                  />
                 </div>
               </div>
 
-              <DialogFooter className="flex justify-between sm:justify-between">
-                <Button variant="destructive" onClick={() => handleEventRequest(viewEventRequestDetails.id, false)}>
-                  Reject Event
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setEditGroupDetails(null)}>Cancel</Button>
+                <Button
+                  onClick={handleEditGroup}
+                  disabled={!editGroupDetails.name || loadingAction}
+                >
+                  {loadingAction ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    'Save Changes'
+                  )}
                 </Button>
-                <Button onClick={() => handleEventRequest(viewEventRequestDetails.id, true)}>Approve Event</Button>
               </DialogFooter>
             </div>
           )}
         </DialogContent>
       </Dialog>
+
     </div>
   )
 }

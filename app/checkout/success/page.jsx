@@ -1,10 +1,40 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { CheckCircle } from "lucide-react"
+import { useCart } from "@/components/navbar"
 
 export default function CheckoutSuccessPage() {
+  const [orderDetails, setOrderDetails] = useState(null)
+  const { refreshCart, setCart} = useCart()
+  const [hasRefreshed, setHasRefreshed] = useState(false)
+
+  useEffect(() => {
+    if (hasRefreshed) return; // Only run once
+    
+    // Try to get order details from localStorage
+    const lastOrder = localStorage.getItem("lastOrder")
+    if (lastOrder) {
+      try {
+        setOrderDetails(JSON.parse(lastOrder))
+      } catch (error) { 
+        console.error("Error parsing order details:", error)
+      }
+    }
+    
+    // Immediately clear the cart state
+    setCart([]);
+    
+    // Refresh cart to ensure it's empty after checkout
+    refreshCart();
+    
+  
+    
+    setHasRefreshed(true);
+  }, [refreshCart, setCart, hasRefreshed])
+
   return (
     <div className="container max-w-md py-16">
       <div className="flex flex-col items-center justify-center text-center space-y-6">
@@ -15,26 +45,13 @@ export default function CheckoutSuccessPage() {
         <p className="text-muted-foreground">
           Thank you for your purchase. We've sent a confirmation email with your order details.
         </p>
-        <div className="payment-section">
-          <h2 className="font-semibold mb-2">Order #FIT-12345</h2>
-          <p className="text-sm text-muted-foreground mb-4">May 2, 2025</p>
-          <div className="space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Premium Protein Powder</span>
-              <span>$49.99</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Resistance Bands Set (x2)</span>
-              <span>$49.98</span>
-            </div>
-            <div className="border-t pt-2 mt-2">
-              <div className="flex justify-between font-medium">
-                <span>Total</span>
-                <span>$105.96</span>
-              </div>
-            </div>
+        
+        {orderDetails && orderDetails.orderId && (
+          <div className="payment-section">
+            <h2 className="font-semibold mb-2">Order #{orderDetails.orderId}</h2>
           </div>
-        </div>
+        )}
+        
         <div className="flex gap-4">
           <Button asChild>
             <Link href="/">Return Home</Link>
@@ -47,3 +64,6 @@ export default function CheckoutSuccessPage() {
     </div>
   )
 }
+
+
+

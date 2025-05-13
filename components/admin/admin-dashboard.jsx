@@ -19,8 +19,8 @@ export function AdminDashboard() {
   const router = useRouter()
   const [activeTab, setActiveTab] = useState("users")
 
-  // Mock check for admin status - in a real app, this would be verified server-side
-  const isAdmin = user?.role === "admin" || true // Forcing true for demo purposes
+  // Check for admin status based on user role from token
+  const isAdmin = user?.role === "Admin"
 
   if (!isAdmin) {
     // In a real app, you might want to redirect non-admins

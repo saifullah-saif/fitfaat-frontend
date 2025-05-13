@@ -36,8 +36,8 @@ export function LoginForm() {
       const result = await login(email, password)
 
       if (result.success) {
-        setSuccessMessage("Login successful!")
-        // The auth provider will handle redirection
+        setSuccessMessage("Login successful! Redirecting to onboarding quiz...")
+        // The auth provider will handle redirection to onboarding
       } else {
         setError(result.error || "Login failed. Please try again.")
       }
@@ -50,7 +50,7 @@ export function LoginForm() {
   }
 
   // For development, provide a demo login option
-  
+
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-100 dark:bg-gray-900 p-4">

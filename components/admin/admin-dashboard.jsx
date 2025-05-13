@@ -1,32 +1,35 @@
 "use client"
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { UserManagement } from "@/components/admin/user-management";
+import { ProgressMonitoring } from "@/components/admin/progress-monitoring";
+import { InventoryManagement } from "@/components/admin/inventory-management";
+import { OrderManagement } from "@/components/admin/order-management";
+import { CommunityManagement } from "@/components/admin/community-management";
+import { ContentModeration } from "@/components/admin/content-moderation";
+import { Reports } from "@/components/admin/reports";
+import { Shield, Users, Activity, Package, ShoppingCart, UsersIcon, MessageSquare } from "lucide-react";
+import { useAuth } from "@/components/auth-provider";
 
-import { useState } from "react"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { UserManagement } from "@/components/admin/user-management"
-import { ProgressMonitoring } from "@/components/admin/progress-monitoring"
-import { InventoryManagement } from "@/components/admin/inventory-management"
-import { OrderManagement } from "@/components/admin/order-management"
-import { CommunityManagement } from "@/components/admin/community-management"
-import { ContentModeration } from "@/components/admin/content-moderation"
-import { useAuth } from "@/components/auth-provider"
-import { useRouter } from "next/navigation"
-import { Shield, Users, Activity, Package, ShoppingCart, UsersIcon, MessageSquare } from "lucide-react"
-import { Reports } from "@/components/admin/reports"
+export default function AdminDashboard() {
+  const { user } = useAuth();
+  const router = useRouter();
+  const [activeTab, setActiveTab] = useState("users");
+  const [users, setUsers] = useState([]);
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-export function AdminDashboard() {
-  const { user } = useAuth()
-  const router = useRouter()
-  const [activeTab, setActiveTab] = useState("users")
-
-  // Mock check for admin status - in a real app, this would be verified server-side
-  const isAdmin = user?.role === "admin" || true // Forcing true for demo purposes
+  // Mock check for admin status
+  const isAdmin = user?.role === "admin" || true;
 
   if (!isAdmin) {
-    // In a real app, you might want to redirect non-admins
-    router.push("/")
-    return null
+    router.push("/");
+    return null;
   }
+
+  
 
   return (
     <div className="container mx-auto p-4 max-w-6xl">

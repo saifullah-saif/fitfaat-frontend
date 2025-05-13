@@ -40,9 +40,9 @@ const verifyToken = (req, res, next) => {
 const generateToken = (user) => {
   // Remove sensitive information and ensure consistent field names
   const userData = {
-    id: user.user_id  ||user.id, // Use user_id from DB or id if already transformed
+    id: user.user_id || user.id, // Use user_id from DB or id if already transformed
     email: user.email,
-    name: user.first_name ? `${user.first_name} ${user.last_name  || ''}`.trim() : user.name || user.username
+    name: user.first_name ? `${user.first_name} ${user.last_name || ''}`.trim() : user.name || user.username
   };
 
   console.log("Generating token with user data:", userData);

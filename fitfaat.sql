@@ -11,6 +11,7 @@ CREATE TABLE users (
   profile_picture VARCHAR(255),
   location VARCHAR(100),
   role ENUM('User', 'Admin') DEFAULT 'User',
+  interests VARCHAR(255),
   quiz_status ENUM('Taken', 'Pending') DEFAULT 'Pending'
 );
 
@@ -186,6 +187,7 @@ CREATE TABLE fitness_groups (
   group_id INT AUTO_INCREMENT PRIMARY KEY,
   name VARCHAR(100) NOT NULL,
   description TEXT,
+  image_url VARCHAR(255),
   creator_user_id INT NOT NULL,
   location VARCHAR(100),
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -439,3 +441,4 @@ CREATE INDEX idx_orders_user_id ON orders(user_id);
 CREATE INDEX idx_order_items_order_id ON order_items(order_id);
 CREATE INDEX idx_product_ratings_product_id ON product_ratings(product_id);
 CREATE INDEX idx_admin_notifications_user_id ON admin_notifications(user_id);
+

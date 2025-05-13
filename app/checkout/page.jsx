@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { useToast } from "@/components/ui/use-toast"
+import { useToast } from "@/hooks/use-toast"
 import { Toaster } from "@/components/ui/toaster"
 import { CreditCard } from "lucide-react"
 import { useAuth } from "@/components/auth-provider"
@@ -33,6 +33,7 @@ export default function CheckoutPage() {
   const [isProcessing, setIsProcessing] = useState(false)
   const [cartItems, setCartItems] = useState([])
   const [isLoading, setIsLoading] = useState(true)
+  const [checkoutError, setCheckoutError] = useState(null)
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -52,11 +53,11 @@ export default function CheckoutPage() {
         router.push('/login');
         return;
       }
-      
+
       try {
         setIsLoading(true);
         const response = await api.get("/cart");
-        
+
         if (response.data && Array.isArray(response.data.items)) {
           setCartItems(response.data.items);
         }
@@ -71,7 +72,7 @@ export default function CheckoutPage() {
         setIsLoading(false);
       }
     };
-    
+
     fetchCart();
   }, [isAuthenticated, router, toast]);
 
@@ -99,6 +100,8 @@ export default function CheckoutPage() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     setIsProcessing(true)
+    // Clear any previous errors
+    setCheckoutError(null)
 
     try {
       // Send order data to server
@@ -112,38 +115,81 @@ export default function CheckoutPage() {
       });
 
       console.log("Order created:", response.data);
-      
+
       // Store order details in localStorage for the success page
       localStorage.setItem("lastOrder", JSON.stringify({
         orderId: response.data.orderId,
         total: response.data.total,
         items: cartItems
       }));
-      
+
       // Immediately clear the cart state before navigation
       setCart([]);
-      
+
       // Also refresh the cart in the context to sync with server
-      await refreshCart();
-      
+      refreshCart();
+
+      // Show success toast
+      toast({
+        title: "Order Placed Successfully",
+        description: `Your order #${response.data.orderId} has been placed.`,
+        variant: "default",
+        duration: 3000,
+      });
+
       // Redirect to success page
       router.push("/checkout/success");
     } catch (err) {
       console.error("Error creating order:", err);
-      
+
       let errorMessage = err.response?.data?.message || "There was an error processing your order. Please try again.";
-      
+      let errorDetails = [];
+
       // Handle insufficient stock error with details
       if (err.response?.data?.details && Array.isArray(err.response.data.details)) {
-        errorMessage = `${errorMessage}:\n${err.response.data.details.join('\n')}`;
+        errorDetails = err.response.data.details;
+
+        // Set checkout error for display in the UI
+        setCheckoutError({
+          message: errorMessage,
+          details: errorDetails
+        });
+
+        // Show a custom toast with JSX content for better formatting
+        toast({
+          title: "Checkout Failed",
+          description: (
+            <div className="space-y-2">
+              <p>{errorMessage}</p>
+              <ul className="mt-2 ml-4 space-y-1">
+                {errorDetails.map((detail, index) => (
+                  <li key={index} className="text-sm list-disc ml-2">{detail}</li>
+                ))}
+              </ul>
+            </div>
+          ),
+          variant: "destructive",
+          duration: 10000, // 10 seconds to ensure user sees it
+        });
+      } else {
+        // Regular error toast for other errors
+        setCheckoutError({
+          message: errorMessage,
+          details: []
+        });
+
+        toast({
+          title: "Checkout Failed",
+          description: errorMessage,
+          variant: "destructive",
+          duration: 5000,
+        });
       }
-      
-      toast({
-        title: "Checkout Failed",
-        description: errorMessage,
-        variant: "destructive",
-      });
+
       setIsProcessing(false);
+
+      // Scroll to top to make error visible
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   }
 
@@ -177,6 +223,20 @@ export default function CheckoutPage() {
 
         <div className="grid gap-8 md:grid-cols-3">
           <div className="md:col-span-2">
+            {/* Error display */}
+            {checkoutError && (
+              <div className="mb-6 p-4 border border-red-300 bg-red-50 rounded-md text-red-800">
+                <h3 className="text-lg font-semibold mb-2">{checkoutError.message}</h3>
+                {checkoutError.details.length > 0 && (
+                  <ul className="list-disc pl-5 space-y-1">
+                    {checkoutError.details.map((detail, index) => (
+                      <li key={index}>{detail}</li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
+
             <form onSubmit={handleSubmit}>
               <div className="space-y-8">
                 <div className="payment-section">
@@ -275,7 +335,7 @@ export default function CheckoutPage() {
                               required={paymentMethod === "card"}
                               className="payment-form-input pl-10"
                             />
-                            
+
                           </div>
                         </div>
                         <div className="grid grid-cols-2 gap-4">
@@ -375,6 +435,8 @@ export default function CheckoutPage() {
         </div>
       </div>
       <Toaster />
+      {/* Add a custom toast container with higher z-index for better visibility */}
+      <div id="toast-container" className="fixed top-4 right-4 z-[100]"></div>
     </>
   )
 }

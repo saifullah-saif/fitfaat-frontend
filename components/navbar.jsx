@@ -21,9 +21,6 @@ import {
   Heart,
   Shield,
   Package,
-  Clock,
-  CheckCircle,
-  Truck,
 } from "lucide-react"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { useAuth } from "@/components/auth-provider"
@@ -104,7 +101,7 @@ export function Navbar() {
     try {
       setIsLoading(true);
       const response = await api.get("/cart");
-      
+
       if (response.data && Array.isArray(response.data.items)) {
         setCart(response.data.items);
       } else {
@@ -127,9 +124,9 @@ export function Navbar() {
 
     try {
       setIsLoading(true);
-      
+
       const response = await api.get("/cart/orders");
-      
+
       if (response.data && Array.isArray(response.data.orders)) {
         setOrders(response.data.orders);
       } else {
@@ -152,9 +149,9 @@ export function Navbar() {
 
     try {
       setIsLoading(true);
-      
+
       const response = await api.get("/marketplace/wishlist");
-      
+
       if (response.data && Array.isArray(response.data.items)) {
         setWishlist(response.data.items);
       } else {
@@ -248,37 +245,37 @@ export function Navbar() {
   // Function to add item to cart that calls the API
   const addToCart = async (product, qty = 1) => {
     if (!product) return;
-    
+
     try {
       // Call the API to add the product to the cart
-      console.log("Adding to cart:", { 
-        productId: product.product_id, 
-        quantity: qty 
+      console.log("Adding to cart:", {
+        productId: product.product_id,
+        quantity: qty
       });
-      
+
       const response = await api.post("/cart/add", {
         productId: product.product_id,
         quantity: qty,
       });
-      
+
       console.log("Add to cart response:", response.data);
-      
+
       // Update local cart state
       const existingItem = cart.find((item) => item.id === product.id);
-      
+
       if (existingItem) {
         // Update quantity if product already exists in cart
-        setCart(cart.map((item) => 
+        setCart(cart.map((item) =>
           item.id === product.id ? { ...item, quantity: item.quantity + qty } : item
         ));
       } else {
         // Add new product to cart
         setCart([...cart, { ...product, quantity: qty }]);
       }
-      
+
       // Refresh the cart to ensure consistency with the server
       fetchCart();
-      
+
     } catch (err) {
       console.error("Error adding item to cart:", err);
     }
@@ -301,7 +298,7 @@ export function Navbar() {
     refreshWishlist,
     addToCart
   };
-  
+
   return (
     <CartContext.Provider value={cartContextValue}>
       <>
@@ -667,6 +664,7 @@ export function Navbar() {
                             onClick={() => {
                               // Remove from wishlist
                               removeFromWishlist(item.id);
+                              window.location.reload();
                             }}
                           >
                             <X className="h-4 w-4" />
@@ -687,12 +685,12 @@ export function Navbar() {
                           await Promise.all(
                             wishlist.map(item => addToCart(item, 1))
                           );
-                          
+
                           // Clear wishlist after adding all items to cart
                           if (wishlist.length > 0) {
                             await Promise.all(wishlist.map(item => removeFromWishlist(item.id)));
                           }
-                          
+
                           // Close wishlist and open cart sheet
                           window.location.reload();
                           setIsWishlistOpen(false);
@@ -747,7 +745,7 @@ export function Navbar() {
                 {orders.length === 0 ? "You have no orders yet" : `${orders.length} orders found`}
               </SheetDescription>
             </SheetHeader>
-            
+
             {isLoading ? (
               <div className="flex items-center justify-center h-[50vh]">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -822,18 +820,5 @@ export function Navbar() {
     </CartContext.Provider>
   )
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 

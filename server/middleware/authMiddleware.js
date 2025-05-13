@@ -1,17 +1,19 @@
 const jwt = require('jsonwebtoken');
 
 // Secret key for JWT - in production, this should be in an environment variable
-const JWT_SECRET = 'fitfaat-secret-key';
+const JWT_SECRET = process.env.JWT_SECRET || 'fitfaat-secret-key';
 
 // Middleware to verify JWT token
 const verifyToken = (req, res, next) => {
   const token = req.cookies.token;
+
 
   if (!token) {
     return res.status(401).json({ error: 'Access denied. No token provided.' });
   }
 
   try {
+    // Verify the token
     const verified = jwt.verify(token, JWT_SECRET);
 
     // Ensure both id and user_id are available for compatibility
@@ -29,8 +31,11 @@ const verifyToken = (req, res, next) => {
     });
 
     req.user = verified;
+
+    // Proceed to the next middleware or route handler
     next();
   } catch (error) {
+    
     console.error("Token verification error:", error);
     res.status(401).json({ error: 'Invalid token' });
   }

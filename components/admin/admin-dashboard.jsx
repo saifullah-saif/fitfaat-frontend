@@ -23,10 +23,11 @@ export function AdminDashboard() {
   const isAdmin = user?.role === "Admin"
 
   if (!isAdmin) {
-    // In a real app, you might want to redirect non-admins
-    router.push("/")
-    return null
+    router.push("/");
+    return null;
   }
+
+  
 
   return (
     <div className="container mx-auto p-4 max-w-6xl">

@@ -1,300 +1,219 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { motion, AnimatePresence } from "framer-motion"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Textarea } from "@/components/ui/textarea"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Progress } from "@/components/ui/progress"
-import { ArrowLeft, ArrowRight, Check } from "lucide-react"
-
-const steps = [
-  { id: "step-1", name: "Basic Info" },
-  { id: "step-2", name: "Body Metrics" },
-  { id: "step-3", name: "Dietary Preferences" },
-  { id: "step-4", name: "Health Information" },
-  { id: "step-5", name: "Complete" },
-]
-
-const foodPreferences = [
-  { id: "omnivore", label: "Omnivore (Everything)" },
-  { id: "vegetarian", label: "Vegetarian (No meat)" },
-  { id: "vegan", label: "Vegan (No animal products)" },
-  { id: "pescatarian", label: "Pescatarian (Fish, no meat)" },
-  { id: "keto", label: "Keto (Low carb, high fat)" },
-  { id: "paleo", label: "Paleo (Whole foods)" },
-]
-
-const commonAllergies = [
-  { id: "dairy", label: "Dairy" },
-  { id: "nuts", label: "Nuts" },
-  { id: "eggs", label: "Eggs" },
-  { id: "soy", label: "Soy" },
-  { id: "wheat", label: "Wheat/Gluten" },
-  { id: "shellfish", label: "Shellfish" },
-  { id: "fish", label: "Fish" },
-]
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import axios from "axios";
 
 export function OnboardingQuiz() {
-  const router = useRouter()
-  const [currentStep, setCurrentStep] = useState(0)
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [formData, setFormData] = useState({
-    age: "",
-    gender: "",
     height: "",
     weight: "",
-    foodPreference: "",
-    healthIssues: "",
-    allergies: [],
-  })
+    target_weight: "",
+    activity_level: "",
+    goal_type: "",
+    daily_calorie_target: "",
+    dietary_preferences: "",
+    allergies: "",
+    medical_conditions: "",
+  });
 
-  const updateFields = (fields) => {
-    setFormData((prev) => ({ ...prev, ...fields }))
-  }
+  const [step, setStep] = useState(0); // To track the current question step
 
-  const next = () => {
-    if (currentStep < steps.length - 1) {
-      setCurrentStep((prev) => prev + 1)
+  // Get user ID from localStorage
+  useEffect(() => {
+    const userData = localStorage.getItem("fitfaat_user");
+    if (!userData) {
+      // Redirect to login if no user data found
+      router.push("/login");
     }
-  }
+  }, [router]);
+  const questions = [
+    { name: "height", label: "What is your height (cm)?" },
+    { name: "weight", label: "What is your weight (kg)?" },
+    { name: "target_weight", label: "What is your target weight (kg)?" },
+    { name: "activity_level", label: "How would you describe your activity level?" },
+    { name: "goal_type", label: "What is your fitness goal?" },
+    { name: "daily_calorie_target", label: "What is your daily calorie target?" },
+    { name: "dietary_preferences", label: "What is your dietary preference?" },
+    { name: "allergies", label: "Do you have any allergies?" },
+    { name: "medical_conditions", label: "Do you have any medical conditions?" },
+  ];
 
-  const prev = () => {
-    if (currentStep > 0) {
-      setCurrentStep((prev) => prev - 1)
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (step < questions.length - 1) {
+      setStep(step + 1); // Move to the next question
+    } else {
+      setLoading(true);
+      setError("");
+      setSuccess("");
+
+      try {
+        // Get user data from localStorage
+        const userData = localStorage.getItem("fitfaat_user");
+        if (!userData) {
+          setError("User not logged in. Please log in first.");
+          setLoading(false);
+          return;
+        }
+
+        // Send the form data to the server
+        const response = await axios.post(
+          "http://localhost:5000/api/onboarding/",
+          formData,
+          {
+            withCredentials: true, // sends JWT cookie
+            headers: {
+              'Content-Type': 'application/json',
+            }
+          }
+        );
+
+        console.log("Onboarding data submitted successfully:", response.data);
+        setSuccess("Profile saved successfully!");
+
+        // Redirect to dashboard after a short delay
+        setTimeout(() => {
+          router.push("/dashboard");
+        }, 2000);
+      } catch (err) {
+        console.error("Error submitting onboarding data:", err.response?.data || err.message);
+        setError(err.response?.data?.error || "Failed to save profile. Please try again.");
+      } finally {
+        setLoading(false);
+      }
     }
-  }
+  };
 
-  const handleSubmit = async () => {
-    // Here you would save the user data to your backend
-    console.log("Submitting user data:", formData)
+  const renderInputField = (question) => {
+    switch (question.name) {
+      case "activity_level":
+      case "goal_type":
+      case "dietary_preferences":
+        return (
+          <select
+            name={question.name}
+            value={formData[question.name]}
+            onChange={handleChange}
+            required
+            className="mt-2 block w-full px-3 py-2 text-base text-gray-700 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-white dark:focus:ring-blue-300"
+          >
+            <option value="">Please select...</option>
+            {question.name === "activity_level" && (
+              <>
+                <option value="Sedentary">Sedentary</option>
+                <option value="Lightly Active">Lightly Active</option>
+                <option value="Moderately Active">Moderately Active</option>
+                <option value="Very Active">Very Active</option>
+                <option value="Extremely Active">Extremely Active</option>
+              </>
+            )}
+            {question.name === "goal_type" && (
+              <>
+                <option value="Weight Loss">Weight Loss</option>
+                <option value="Weight Gain">Weight Gain</option>
+                <option value="Maintenance">Maintenance</option>
+                <option value="Muscle Building">Muscle Building</option>
+                <option value="Overall Fitness">Overall Fitness</option>
+              </>
+            )}
+            {question.name === "dietary_preferences" && (
+              <>
+                <option value="Vegan">Vegan</option>
+                <option value="Vegetarian">Vegetarian</option>
+                <option value="Mixed">Mixed</option>
+                <option value="Non-Veg">Non-Veg</option>
+              </>
+            )}
+          </select>
+        );
 
-    // For now, we'll just simulate a successful save and redirect
-    setTimeout(() => {
-      router.push("/dashboard")
-    }, 1500)
-  }
-
-  const progressPercentage = ((currentStep + 1) / steps.length) * 100
+      default:
+        return (
+          <div className="relative">
+            <input
+              type="text"
+              name={question.name}
+              value={formData[question.name]}
+              onChange={handleChange}
+              required
+              className="peer mt-2 block w-full px-3 py-2 text-base text-gray-700 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-white dark:focus:ring-blue-300"
+            />
+            <label
+              htmlFor={question.name}
+              className="absolute text-gray-500 left-3 top-2 text-sm transition-all peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-500 peer-focus:text-sm peer-focus:text-blue-500 dark:text-gray-300 dark:peer-focus:text-blue-300"
+            >
+              {question.label}
+            </label>
+          </div>
+        );
+    }
+  };
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-2xl">
-        <CardHeader>
-          <CardTitle className="text-2xl font-bold">Personalize Your Experience</CardTitle>
-          <CardDescription>Help us customize FitFaat to your needs by answering a few questions</CardDescription>
-          <Progress value={progressPercentage} className="h-2 mt-4" />
-        </CardHeader>
+    <form
+      onSubmit={handleSubmit}
+      className="max-w-md mx-auto p-6 bg-white dark:bg-gray-900 rounded-lg shadow-lg space-y-6"
+    >
+      <h2 className="text-2xl font-semibold text-center text-gray-900 dark:text-white">Onboarding Quiz</h2>
 
-        <CardContent>
-          <AnimatePresence mode="wait">
-            {currentStep === 0 && (
-              <motion.div
-                key="step1"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.3 }}
-                className="space-y-4"
-              >
-                <div className="space-y-2">
-                  <Label htmlFor="age">Age</Label>
-                  <Input
-                    id="age"
-                    type="number"
-                    placeholder="Enter your age"
-                    value={formData.age}
-                    onChange={(e) => updateFields({ age: e.target.value })}
-                  />
-                </div>
+      {/* Error message */}
+      {error && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+          <span className="block sm:inline">{error}</span>
+        </div>
+      )}
 
-                <div className="space-y-2">
-                  <Label>Gender</Label>
-                  <RadioGroup
-                    value={formData.gender}
-                    onValueChange={(value) => updateFields({ gender: value })}
-                    className="flex flex-col space-y-2"
-                  >
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="male" id="male" />
-                      <Label htmlFor="male">Male</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="female" id="female" />
-                      <Label htmlFor="female">Female</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="other" id="other" />
-                      <Label htmlFor="other">Other</Label>
-                    </div>
-                  </RadioGroup>
-                </div>
-              </motion.div>
-            )}
+      {/* Success message */}
+      {success && (
+        <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative" role="alert">
+          <span className="block sm:inline">{success}</span>
+        </div>
+      )}
 
-            {currentStep === 1 && (
-              <motion.div
-                key="step2"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.3 }}
-                className="space-y-4"
-              >
-                <div className="space-y-2">
-                  <Label htmlFor="height">Height (cm)</Label>
-                  <Input
-                    id="height"
-                    type="number"
-                    placeholder="Enter your height in cm"
-                    value={formData.height}
-                    onChange={(e) => updateFields({ height: e.target.value })}
-                  />
-                </div>
+      <div className="space-y-4">
+        <p className="text-lg text-gray-700 dark:text-gray-300">{questions[step]?.label}</p>
+        {renderInputField(questions[step])}
 
-                <div className="space-y-2">
-                  <Label htmlFor="weight">Weight (kg)</Label>
-                  <Input
-                    id="weight"
-                    type="number"
-                    placeholder="Enter your weight in kg"
-                    value={formData.weight}
-                    onChange={(e) => updateFields({ weight: e.target.value })}
-                  />
-                </div>
-              </motion.div>
-            )}
-
-            {currentStep === 2 && (
-              <motion.div
-                key="step3"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.3 }}
-                className="space-y-4"
-              >
-                <div className="space-y-2">
-                  <Label>Food Preferences</Label>
-                  <RadioGroup
-                    value={formData.foodPreference}
-                    onValueChange={(value) => updateFields({ foodPreference: value })}
-                    className="flex flex-col space-y-2"
-                  >
-                    {foodPreferences.map((preference) => (
-                      <div key={preference.id} className="flex items-center space-x-2">
-                        <RadioGroupItem value={preference.id} id={preference.id} />
-                        <Label htmlFor={preference.id}>{preference.label}</Label>
-                      </div>
-                    ))}
-                  </RadioGroup>
-                </div>
-              </motion.div>
-            )}
-
-            {currentStep === 3 && (
-              <motion.div
-                key="step4"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.3 }}
-                className="space-y-4"
-              >
-                <div className="space-y-2">
-                  <Label htmlFor="healthIssues">Health Issues or Conditions</Label>
-                  <Textarea
-                    id="healthIssues"
-                    placeholder="Please list any health issues or conditions (e.g., diabetes, hypertension)"
-                    value={formData.healthIssues}
-                    onChange={(e) => updateFields({ healthIssues: e.target.value })}
-                    className="min-h-[100px]"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Food Allergies</Label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {commonAllergies.map((allergy) => (
-                      <div key={allergy.id} className="flex items-center space-x-2">
-                        <Checkbox
-                          id={allergy.id}
-                          checked={formData.allergies.includes(allergy.id)}
-                          onCheckedChange={(checked) => {
-                            if (checked) {
-                              updateFields({ allergies: [...formData.allergies, allergy.id] })
-                            } else {
-                              updateFields({
-                                allergies: formData.allergies.filter((id) => id !== allergy.id),
-                              })
-                            }
-                          }}
-                        />
-                        <Label htmlFor={allergy.id}>{allergy.label}</Label>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </motion.div>
-            )}
-
-            {currentStep === 4 && (
-              <motion.div
-                key="step5"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.3 }}
-                className="space-y-4 text-center"
-              >
-                <div className="flex justify-center">
-                  <div className="rounded-full bg-primary/10 p-3">
-                    <Check className="h-8 w-8 text-primary" />
-                  </div>
-                </div>
-                <h3 className="text-xl font-bold">All Set!</h3>
-                <p className="text-muted-foreground">
-                  Thank you for providing your information. We'll use this to personalize your experience.
-                </p>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </CardContent>
-
-        <CardFooter className="flex justify-between">
-          {currentStep > 0 && currentStep < 4 && (
-            <Button variant="outline" onClick={prev}>
-              <ArrowLeft className="mr-2 h-4 w-4" />
+        <div className="flex justify-between items-center">
+          {step > 0 && (
+            <button
+              type="button"
+              onClick={() => setStep(step - 1)}
+              className="px-6 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 focus:outline-none"
+            >
               Back
-            </Button>
+            </button>
           )}
-          {currentStep === 0 && <div />}
+          <button
+            type="submit"
+            disabled={loading}
+            className={`px-6 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none dark:bg-blue-600 dark:hover:bg-blue-500 ${
+              loading ? "opacity-50 cursor-not-allowed" : ""
+            }`}
+          >
+            {loading ? "Saving..." : step < questions.length - 1 ? "Next" : "Submit"}
+          </button>
+        </div>
+      </div>
 
-          {currentStep < 3 && (
-            <Button onClick={next}>
-              Next
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-          )}
-
-          {currentStep === 3 && (
-            <Button onClick={next}>
-              Complete
-              <Check className="ml-2 h-4 w-4" />
-            </Button>
-          )}
-
-          {currentStep === 4 && (
-            <Button onClick={handleSubmit} className="w-full">
-              Go to Dashboard
-            </Button>
-          )}
-        </CardFooter>
-      </Card>
-    </div>
-  )
+      <div className="text-center">
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          Step {step + 1} of {questions.length}
+        </p>
+      </div>
+    </form>
+  );
 }

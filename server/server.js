@@ -11,7 +11,16 @@ if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
+const profileRoutes = require("./routes/profileRoutes.js");
 const authRoutes = require("./routes/authRoutes.js");
+
+const adminUsersRoutes = require("./routes/adminUsersRoutes.js");
+const adminfeedbackRoutes = require("./routes/adminfeedbackRoutes.js");
+const foodRoutes = require("./routes/foodRoutes.js");
+const feedbackRoutes = require("./routes/feedbackRoutes.js");
+const onboardingRoutes = require("./routes/onboardingRoutes.js");
+const inventoryRoutes = require("./routes/inventoryRoutes.js");
+const dashboarddietRoutes = require("./routes/dashboarddietRoutes.js");
 const marketplaceRoutes = require("./routes/marketplaceRoutes.js");
 const cartRoutes = require("./routes/cartRoutes.js");
 const communityRoutes = require("./routes/communityRoutes.js");
@@ -25,7 +34,7 @@ const gymRoutes = require("./routes/gymRoutes.js");
 const app = express();
 app.use(
   cors({
-    origin: ["http://localhost:3000", "http://localhost:5173"],
+    origin: ["http://localhost:3000", "http://localhost:5000"],
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true,
     exposedHeaders: ['Content-Length', 'Content-Type'],
@@ -37,15 +46,29 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(cookieParser());
 app.use(bodyParser.json({ limit: '50mb' }));
 app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true })); // For parsing application/x-www-form-urlencoded
 
 // Serve static files from the uploads directory
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 app.use(bodyParser.json());
+// ✅ Routes
 
-app.use("/auth", authRoutes);
+app.use("/api/admin/users", adminUsersRoutes);
+app.use("/api/foods", foodRoutes);
+app.use("/api/inventory", inventoryRoutes);
+app.use("/api/dashboard/diet", dashboarddietRoutes);
+app.use("/api/profile", profileRoutes);
+app.use("/api/onboarding", onboardingRoutes);
+app.use("/api/admin/feedback", adminfeedbackRoutes);
+app.use("/api/feedback", feedbackRoutes);
+
 app.use("/marketplace", marketplaceRoutes);
 app.use("/cart", cartRoutes);
+
+// Saif
+app.use("/auth", authRoutes);
 app.use("/community", communityRoutes);
 app.use("/admin-content", adminContentRoutes);
 app.use("/admin-group", adminGroupRoutes);
@@ -53,6 +76,13 @@ app.use("/api/auth", authRoutes);
 app.use("/api/exercises", exerciseRoutes);
 app.use("/api/workouts", workoutRoutes);
 app.use("/api/gyms", gymRoutes);
+
+
+// ✅ Global Error Handling Middleware
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ message: "Internal Server Error", error: err.message });
+});
 
 app.listen(5000, () => {
   console.log("Server started on port 5000");

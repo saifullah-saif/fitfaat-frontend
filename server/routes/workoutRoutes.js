@@ -68,37 +68,7 @@ router.post("/create_user_workout_plan", (req, res) => {
   );
 });
 
-// Add exercise to workout plan
-router.post("/add_exercise_to_plan", (req, res) => {
-  console.log("Adding exercise to workout plan:", req.body);
 
-  const { workout_plan_id, exercise_id, sets, reps, duration, day_of_week } = req.body;
-
-  const query = `
-    INSERT INTO workout_plan_exercises (
-      workout_plan_id, exercise_id, sets, reps, duration, day_of_week
-    )
-    VALUES (?, ?, ?, ?, ?, ?)
-  `;
-
-  db.query(
-    query,
-    [workout_plan_id, exercise_id, sets, reps, duration, day_of_week],
-    (err, result) => {
-      if (err) {
-        console.log("Error adding exercise to workout plan:", err);
-        return res.status(500).json({ error: "Failed to add exercise to workout plan" });
-      }
-
-      console.log("Exercise added to workout plan successfully");
-      res.status(201).json({
-        success: true,
-        workout_plan_exercise_id: result.insertId,
-        message: "Exercise added to workout plan successfully"
-      });
-    }
-  );
-});
 
 // Log a workout
 router.post("/log_workout", (req, res) => {

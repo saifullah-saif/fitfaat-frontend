@@ -15,6 +15,7 @@ const profileRoutes = require("./routes/profileRoutes.js");
 const authRoutes = require("./routes/authRoutes.js");
 
 const adminUsersRoutes = require("./routes/adminUsersRoutes.js");
+const adminOrderRoutes = require("./routes/adminOrderRoutes.js");
 const adminfeedbackRoutes = require("./routes/adminfeedbackRoutes.js");
 const foodRoutes = require("./routes/foodRoutes.js");
 const feedbackRoutes = require("./routes/feedbackRoutes.js");
@@ -52,6 +53,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // ✅ Routes
 
 app.use("/api/admin/users", adminUsersRoutes);
+app.use("/api/admin/orders", adminOrderRoutes);
 app.use("/api/foods", foodRoutes);
 app.use("/api/inventory", inventoryRoutes);
 app.use("/api/dashboard/diet", dashboarddietRoutes);

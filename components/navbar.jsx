@@ -21,6 +21,9 @@ import {
   Heart,
   Shield,
   Package,
+  Clock,
+  CheckCircle,
+  Truck,
 } from "lucide-react"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { useAuth } from "@/components/auth-provider"
@@ -101,7 +104,7 @@ export function Navbar() {
     try {
       setIsLoading(true);
       const response = await api.get("/cart");
-
+      
       if (response.data && Array.isArray(response.data.items)) {
         setCart(response.data.items);
       } else {
@@ -124,9 +127,9 @@ export function Navbar() {
 
     try {
       setIsLoading(true);
-
+      
       const response = await api.get("/cart/orders");
-
+      
       if (response.data && Array.isArray(response.data.orders)) {
         setOrders(response.data.orders);
       } else {
@@ -149,9 +152,9 @@ export function Navbar() {
 
     try {
       setIsLoading(true);
-
+      
       const response = await api.get("/marketplace/wishlist");
-
+      
       if (response.data && Array.isArray(response.data.items)) {
         setWishlist(response.data.items);
       } else {
@@ -245,37 +248,37 @@ export function Navbar() {
   // Function to add item to cart that calls the API
   const addToCart = async (product, qty = 1) => {
     if (!product) return;
-
+    
     try {
       // Call the API to add the product to the cart
-      console.log("Adding to cart:", {
-        productId: product.product_id,
-        quantity: qty
+      console.log("Adding to cart:", { 
+        productId: product.product_id, 
+        quantity: qty 
       });
-
+      
       const response = await api.post("/cart/add", {
         productId: product.product_id,
         quantity: qty,
       });
-
+      
       console.log("Add to cart response:", response.data);
-
+      
       // Update local cart state
       const existingItem = cart.find((item) => item.id === product.id);
-
+      
       if (existingItem) {
         // Update quantity if product already exists in cart
-        setCart(cart.map((item) =>
+        setCart(cart.map((item) => 
           item.id === product.id ? { ...item, quantity: item.quantity + qty } : item
         ));
       } else {
         // Add new product to cart
         setCart([...cart, { ...product, quantity: qty }]);
       }
-
+      
       // Refresh the cart to ensure consistency with the server
       fetchCart();
-
+      
     } catch (err) {
       console.error("Error adding item to cart:", err);
     }
@@ -298,7 +301,7 @@ export function Navbar() {
     refreshWishlist,
     addToCart
   };
-
+  
   return (
     <CartContext.Provider value={cartContextValue}>
       <>
@@ -323,23 +326,21 @@ export function Navbar() {
             <div className="hidden md:flex md:flex-1 md:items-center md:justify-between">
               <div className="flex-1"></div>
               <nav className="flex items-center justify-center space-x-4 flex-1">
-                {navItems
-                  .filter(item => item.name !== "Admin" || (user && user.role === "Admin"))
-                  .map((item) => (
-                    <Link
-                      key={item.name}
-                      href={item.href}
-                      className={cn(
-                        "flex items-center px-2 py-1.5 text-sm font-medium rounded-md transition-colors",
-                        pathname === item.href
-                          ? "text-primary bg-primary/10"
-                          : "text-muted-foreground hover:text-foreground hover:bg-accent",
-                      )}
-                    >
-                      <item.icon className="mr-2 h-4 w-4" />
-                      {item.name}
-                    </Link>
-                  ))}
+                {navItems.map((item) => (
+                  <Link
+                    key={item.name}
+                    href={item.href}
+                    className={cn(
+                      "flex items-center px-2 py-1.5 text-sm font-medium rounded-md transition-colors",
+                      pathname === item.href
+                        ? "text-primary bg-primary/10"
+                        : "text-muted-foreground hover:text-foreground hover:bg-accent",
+                    )}
+                  >
+                    <item.icon className="mr-2 h-4 w-4" />
+                    {item.name}
+                  </Link>
+                ))}
               </nav>
               <div className="flex items-center space-x-2 flex-1 justify-end">
                 {isAuthenticated ? (
@@ -431,24 +432,22 @@ export function Navbar() {
         {isOpen && (
           <div className="fixed inset-0 top-14 z-40 bg-background border-t md:hidden">
             <nav className="grid gap-1 p-4">
-              {navItems
-                .filter(item => item.name !== "Admin" || (user && user.role === "Admin"))
-                .map((item) => (
-                  <Link
-                    key={item.name}
-                    href={item.href}
-                    className={cn(
-                      "flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors",
-                      pathname === item.href
-                        ? "bg-primary/10 text-primary"
-                        : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
-                    )}
-                    onClick={() => setIsOpen(false)}
-                  >
-                    <item.icon className="mr-2 h-5 w-5" />
-                    {item.name}
-                  </Link>
-                ))}
+              {navItems.map((item) => (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  className={cn(
+                    "flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                    pathname === item.href
+                      ? "bg-primary/10 text-primary"
+                      : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
+                  )}
+                  onClick={() => setIsOpen(false)}
+                >
+                  <item.icon className="mr-2 h-5 w-5" />
+                  {item.name}
+                </Link>
+              ))}
               <Link
                 href="/profile"
                 className="flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors text-muted-foreground hover:bg-accent hover:text-accent-foreground"
@@ -689,12 +688,12 @@ export function Navbar() {
                           await Promise.all(
                             wishlist.map(item => addToCart(item, 1))
                           );
-
+                          
                           // Clear wishlist after adding all items to cart
                           if (wishlist.length > 0) {
                             await Promise.all(wishlist.map(item => removeFromWishlist(item.id)));
                           }
-
+                          
                           // Close wishlist and open cart sheet
                           window.location.reload();
                           setIsWishlistOpen(false);
@@ -749,7 +748,7 @@ export function Navbar() {
                 {orders.length === 0 ? "You have no orders yet" : `${orders.length} orders found`}
               </SheetDescription>
             </SheetHeader>
-
+            
             {isLoading ? (
               <div className="flex items-center justify-center h-[50vh]">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -824,5 +823,18 @@ export function Navbar() {
     </CartContext.Provider>
   )
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 

@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Slider } from "@/components/ui/slider"
 import { Badge } from "@/components/ui/badge"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import {
   MessageSquare,
   Heart,
@@ -23,7 +23,6 @@ import {
   Calendar,
   Filter,
   ChevronRight,
-
   MessageCircle,
   X,
   Search,
@@ -32,6 +31,8 @@ import {
   MoreVertical,
   Edit,
   Trash2,
+  Plus,
+  Upload
 } from "lucide-react"
 import {
   DropdownMenu,
@@ -236,6 +237,11 @@ export function Community() {
   const [joinedGroups, setJoinedGroups] = useState<number[]>([1]) // Start with one group joined
   const [groupFilter, setGroupFilter] = useState<"all" | "joined" | "myPosts">("all")
   const [groupSearchQuery, setGroupSearchQuery] = useState("")
+  const [createGroupOpen, setCreateGroupOpen] = useState(false)
+  const [newGroupName, setNewGroupName] = useState("")
+  const [newGroupDescription, setNewGroupDescription] = useState("")
+  const [newGroupLocation, setNewGroupLocation] = useState("")
+  const [newGroupImage, setNewGroupImage] = useState<any>(null)
   const [connectionRequests, setConnectionRequests] = useState(connectionRequestsData)
   const [connections, setConnections] = useState(connectionsData)
   const [selectedMarker, setSelectedMarker] = useState<any>(null) // map marker selector
@@ -400,18 +406,56 @@ export function Community() {
             fetchPartnersWithFilters();
           },
           (error) => {
-            console.error("Geolocation error:", error);
+            // Create a more user-friendly error message based on the error code
+            let errorMessage = "Geolocation error";
+
+            if (error.code === 1) {
+              errorMessage = "Location access denied. Please enable location services in your browser settings.";
+            } else if (error.code === 2) {
+              errorMessage = "Location unavailable. Please try again later.";
+            } else if (error.code === 3) {
+              errorMessage = "Location request timed out. Please try again later.";
+            }
+
+            // Log the detailed error for debugging
+            console.error(`Geolocation error (${error.code}): ${errorMessage}`, error);
+
+            // Show a toast notification to inform the user
+            toast({
+              title: "Location Error",
+              description: errorMessage,
+              variant: "destructive"
+            });
+
             // Continue with fetching partners even if geolocation fails
             fetchPartnersWithFilters();
           },
           { timeout: 10000 }
         );
       } else {
-        // If geolocation is not available, just fetch partners with current filters
+        // If geolocation is not available in the browser
+        console.error("Geolocation is not supported by this browser");
+
+        // Show a toast notification to inform the user
+        toast({
+          title: "Location Not Available",
+          description: "Geolocation is not supported by your browser. Some features may be limited.",
+          variant: "destructive"
+        });
+
+        // Continue with fetching partners with default location
         fetchPartnersWithFilters();
       }
     } catch (error) {
       console.error("Error in fetchPartners:", error);
+
+      // Show a toast notification for the general error
+      toast({
+        title: "Error",
+        description: "Failed to fetch partners. Please try again later.",
+        variant: "destructive"
+      });
+
       setIsLoadingPartners(false);
     }
   }
@@ -1424,6 +1468,81 @@ export function Community() {
     }
   }
 
+  const handleCreateGroup = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!newGroupName.trim()) {
+      toast({
+        title: "Error",
+        description: "Group name is required",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const response = await axios.post(
+        "http://localhost:5000/community/createGroup",
+        {
+          name: newGroupName,
+          description: newGroupDescription,
+          location: newGroupLocation,
+          imageUrl: newGroupImage
+        },
+        {
+          withCredentials: true
+        }
+      );
+
+      if (response.data.success) {
+        // Add the new group to the groups list
+        if (response.data.group) {
+          setGroups([response.data.group, ...groups]);
+          // Add the group to joined groups
+          setJoinedGroups([...joinedGroups, response.data.group.id]);
+        } else {
+          // Refresh groups after a short delay to get the server-formatted data
+          setTimeout(async () => {
+            try {
+              const groupsResponse = await axios.get("http://localhost:5000/community/fetchAllGroups");
+              if (groupsResponse.data && Array.isArray(groupsResponse.data)) {
+                setGroups(groupsResponse.data);
+              }
+
+              const userGroupsResponse = await axios.get("http://localhost:5000/community/userGroups", {
+                withCredentials: true
+              });
+              if (userGroupsResponse.data && Array.isArray(userGroupsResponse.data)) {
+                setJoinedGroups(userGroupsResponse.data);
+              }
+            } catch (refreshError) {
+              console.error("Error refreshing groups:", refreshError);
+            }
+          }, 1000);
+        }
+
+        // Reset form and close modal
+        setNewGroupName("");
+        setNewGroupDescription("");
+        setNewGroupLocation("");
+        setNewGroupImage(null);
+        setCreateGroupOpen(false);
+
+        toast({
+          title: "Success",
+          description: "Group created successfully",
+        });
+      }
+    } catch (error) {
+      console.error("Error creating group:", error);
+      toast({
+        title: "Error",
+        description: "Failed to create group. Please try again.",
+        variant: "destructive"
+      });
+    }
+  }
+
   const handleLikePost = async (postId: number) => {
     try {
       const response = await axios.post(
@@ -1607,7 +1726,13 @@ export function Community() {
 
       try {
         const response = await axios.get(`http://localhost:5000/community/comments/${postId}`)
-        setPostComments(prev => ({ ...prev, [postId]: response.data }))
+        // Only show approved comments (admin_mod is null or 'Approved')
+        const approvedComments = response.data.filter(
+          (comment: any) => comment.adminMod === undefined ||
+                           comment.adminMod === null ||
+                           comment.adminMod === 'Approved'
+        )
+        setPostComments(prev => ({ ...prev, [postId]: approvedComments }))
       } catch (error) {
         console.error(`Error fetching comments for post ${postId}:`, error)
         toast({
@@ -2752,16 +2877,121 @@ export function Community() {
                 Join local groups to connect with like-minded fitness enthusiasts
               </p>
             </div>
-            <div className="relative w-64">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search groups..."
-                className="pl-8"
-                value={groupSearchQuery}
-                onChange={(e) => setGroupSearchQuery(e.target.value)}
-              />
+            <div className="flex gap-2">
+              <div className="relative w-64">
+                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search groups..."
+                  className="pl-8"
+                  value={groupSearchQuery}
+                  onChange={(e) => setGroupSearchQuery(e.target.value)}
+                />
+              </div>
+              <Button onClick={() => setCreateGroupOpen(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Create Group
+              </Button>
             </div>
           </div>
+
+          {/* Create Group Modal */}
+          <Dialog open={createGroupOpen} onOpenChange={setCreateGroupOpen}>
+            <DialogContent className="sm:max-w-[500px]">
+              <DialogHeader>
+                <DialogTitle>Create New Group</DialogTitle>
+                <DialogDescription>
+                  Create a new fitness group to connect with like-minded individuals.
+                </DialogDescription>
+              </DialogHeader>
+              <form onSubmit={handleCreateGroup}>
+                <div className="grid gap-4 py-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="groupName">Group Name *</Label>
+                    <Input
+                      id="groupName"
+                      placeholder="Enter group name"
+                      value={newGroupName}
+                      onChange={(e) => setNewGroupName(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="groupDescription">Description</Label>
+                    <Textarea
+                      id="groupDescription"
+                      placeholder="Describe your group's purpose and activities"
+                      value={newGroupDescription}
+                      onChange={(e) => setNewGroupDescription(e.target.value)}
+                      className="min-h-[100px]"
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="groupLocation">Location</Label>
+                    <Input
+                      id="groupLocation"
+                      placeholder="e.g., Dhaka, Bangladesh or Online"
+                      value={newGroupLocation}
+                      onChange={(e) => setNewGroupLocation(e.target.value)}
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="groupImage">Group Image</Label>
+                    <div className="flex items-center gap-4">
+                      {newGroupImage && (
+                        <div className="relative w-24 h-24 rounded overflow-hidden">
+                          <img
+                            src={newGroupImage}
+                            alt="Group preview"
+                            className="object-cover w-full h-full"
+                          />
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="icon"
+                            className="absolute top-1 right-1 h-6 w-6"
+                            onClick={() => setNewGroupImage(null)}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      )}
+                      <Label
+                        htmlFor="groupImageUpload"
+                        className="cursor-pointer flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        <Upload className="h-4 w-4" />
+                        {newGroupImage ? "Change image" : "Upload image"}
+                      </Label>
+                      <Input
+                        id="groupImageUpload"
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          if (e.target.files && e.target.files[0]) {
+                            const file = e.target.files[0];
+                            const reader = new FileReader();
+                            reader.onload = (event) => {
+                              if (event.target) {
+                                setNewGroupImage(event.target.result);
+                              }
+                            };
+                            reader.readAsDataURL(file);
+                          }
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button type="button" variant="outline" onClick={() => setCreateGroupOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button type="submit">Create Group</Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
           {joinedGroups.length > 0 && (
             <>
               <h3 className="text-lg font-medium mt-6 mb-3">My Groups</h3>

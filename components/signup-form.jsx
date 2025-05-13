@@ -211,15 +211,6 @@ export function SignupForm() {
                 <option value="23.79432111610882, 90.4167017933585">Gulshan</option>
                 <option value="23.742041424328946, 90.36899548884092">Dhanmondi</option>
               </select>
-{/* 
-              <Input
-                id="location"
-                type="text"
-                placeholder="Dhaka"
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                required
-              /> */}
             </div>
 
             <Button type="submit" className="w-full" disabled={isLoading}>

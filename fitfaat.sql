@@ -9,6 +9,7 @@ CREATE TABLE users (
   date_of_birth DATE,
   gender ENUM('Male', 'Female'),
   profile_picture VARCHAR(255),
+  bio VARCHAR(100),
   location VARCHAR(100),
   role ENUM('User', 'Admin') DEFAULT 'User',
   interests VARCHAR(255),
@@ -227,6 +228,7 @@ CREATE TABLE comments (
   content TEXT NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  admin_mod ENUM('Approved', 'Rejected') DEFAULT 'Approved';
   FOREIGN KEY (post_id) REFERENCES posts(post_id) ON DELETE CASCADE,
   FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
 );
@@ -236,6 +238,7 @@ CREATE TABLE likes (
   user_id INT NOT NULL,
   post_id INT NOT NULL ,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  admin_mod ENUM('Approved', 'Rejected') DEFAULT 'Approved';
   UNIQUE (user_id, post_id),
   FOREIGN KEY (post_id) REFERENCES posts(post_id) ON DELETE CASCADE,
   FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
@@ -418,6 +421,15 @@ CREATE TABLE foods (
     type VARCHAR(100) NOT NULL,
     calories INT NOT NULL
 );
+
+
+
+CREATE TABLE feedback (
+feedback_id INT AUTO_INCREMENT PRIMARY KEY, 
+user_id INT NOT NULL, 
+message TEXT NOT NULL,
+time_stamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP, 
+FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE );
 
 -- Create indexes for performance improvements
 CREATE INDEX idx_health_profiles_user_id ON health_profiles(user_id);

@@ -46,6 +46,48 @@ const saveBase64Image = (base64Image) => {
   return `/uploads/images/${filename}`;
 };
 
+/**
+ * Delete an image from the filesystem
+ * @param {string} imagePath - The path to the image (from the database)
+ * @returns {boolean} Whether the image was successfully deleted
+ */
+const deleteImage = (imagePath) => {
+  // Check if the input is valid
+  if (!imagePath || typeof imagePath !== 'string') {
+    console.warn('Invalid image path provided for deletion');
+    return false;
+  }
+
+  // Only process paths that start with /uploads/images/
+  if (!imagePath.startsWith('/uploads/images/')) {
+    console.warn('Image path does not point to uploads directory:', imagePath);
+    return false;
+  }
+
+  try {
+    // Get the filename from the path
+    const filename = path.basename(imagePath);
+
+    // Construct the full path to the file
+    const filepath = path.join(imagesDir, filename);
+
+    // Check if the file exists
+    if (!fs.existsSync(filepath)) {
+      console.warn('Image file does not exist:', filepath);
+      return false;
+    }
+
+    // Delete the file
+    fs.unlinkSync(filepath);
+    console.log('Successfully deleted image:', filepath);
+    return true;
+  } catch (error) {
+    console.error('Error deleting image:', error);
+    return false;
+  }
+};
+
 module.exports = {
-  saveBase64Image
+  saveBase64Image,
+  deleteImage
 };

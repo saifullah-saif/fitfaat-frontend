@@ -323,21 +323,23 @@ export function Navbar() {
             <div className="hidden md:flex md:flex-1 md:items-center md:justify-between">
               <div className="flex-1"></div>
               <nav className="flex items-center justify-center space-x-4 flex-1">
-                {navItems.map((item) => (
-                  <Link
-                    key={item.name}
-                    href={item.href}
-                    className={cn(
-                      "flex items-center px-2 py-1.5 text-sm font-medium rounded-md transition-colors",
-                      pathname === item.href
-                        ? "text-primary bg-primary/10"
-                        : "text-muted-foreground hover:text-foreground hover:bg-accent",
-                    )}
-                  >
-                    <item.icon className="mr-2 h-4 w-4" />
-                    {item.name}
-                  </Link>
-                ))}
+                {navItems
+                  .filter(item => item.name !== "Admin" || (user && user.role === "Admin"))
+                  .map((item) => (
+                    <Link
+                      key={item.name}
+                      href={item.href}
+                      className={cn(
+                        "flex items-center px-2 py-1.5 text-sm font-medium rounded-md transition-colors",
+                        pathname === item.href
+                          ? "text-primary bg-primary/10"
+                          : "text-muted-foreground hover:text-foreground hover:bg-accent",
+                      )}
+                    >
+                      <item.icon className="mr-2 h-4 w-4" />
+                      {item.name}
+                    </Link>
+                  ))}
               </nav>
               <div className="flex items-center space-x-2 flex-1 justify-end">
                 {isAuthenticated ? (
@@ -429,22 +431,24 @@ export function Navbar() {
         {isOpen && (
           <div className="fixed inset-0 top-14 z-40 bg-background border-t md:hidden">
             <nav className="grid gap-1 p-4">
-              {navItems.map((item) => (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className={cn(
-                    "flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors",
-                    pathname === item.href
-                      ? "bg-primary/10 text-primary"
-                      : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
-                  )}
-                  onClick={() => setIsOpen(false)}
-                >
-                  <item.icon className="mr-2 h-5 w-5" />
-                  {item.name}
-                </Link>
-              ))}
+              {navItems
+                .filter(item => item.name !== "Admin" || (user && user.role === "Admin"))
+                .map((item) => (
+                  <Link
+                    key={item.name}
+                    href={item.href}
+                    className={cn(
+                      "flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                      pathname === item.href
+                        ? "bg-primary/10 text-primary"
+                        : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
+                    )}
+                    onClick={() => setIsOpen(false)}
+                  >
+                    <item.icon className="mr-2 h-5 w-5" />
+                    {item.name}
+                  </Link>
+                ))}
               <Link
                 href="/profile"
                 className="flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors text-muted-foreground hover:bg-accent hover:text-accent-foreground"

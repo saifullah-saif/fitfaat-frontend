@@ -1,7 +1,7 @@
 const express = require("express");
 const db = require("../db.js");
 const { verifyToken } = require("../middleware/authMiddleware.js");
-const { saveBase64Image } = require("../utils/imageUpload.js");
+const { saveBase64Image, deleteImage } = require("../utils/imageUpload.js");
 
 const router = express.Router();
 
@@ -18,7 +18,7 @@ router.get("/fetchAllPosts", (req, res) => {
       p.content,
       p.image_url AS image,
       (SELECT COUNT(*) FROM likes l WHERE l.post_id = p.post_id) AS likes,
-      (SELECT COUNT(*) FROM comments c WHERE c.post_id = p.post_id) AS comments,
+      (SELECT COUNT(*) FROM comments c WHERE c.post_id = p.post_id AND (c.admin_mod IS NULL OR c.admin_mod = 'Approved')) AS comments,
       CASE
         WHEN TIMESTAMPDIFF(MINUTE, p.created_at, NOW()) < 60 THEN CONCAT(TIMESTAMPDIFF(MINUTE, p.created_at, NOW()), ' minutes ago')
         WHEN TIMESTAMPDIFF(HOUR, p.created_at, NOW()) < 24 THEN CONCAT(TIMESTAMPDIFF(HOUR, p.created_at, NOW()), ' hours ago')
@@ -27,10 +27,12 @@ router.get("/fetchAllPosts", (req, res) => {
       JSON_OBJECT(
         'id', g.group_id,
         'name', g.name
-      ) AS \`group\`
+      ) AS \`group\`,
+      p.admin_mod
     FROM posts p
     JOIN users u ON p.user_id = u.user_id
     JOIN fitness_groups g ON p.group_id = g.group_id
+    WHERE p.admin_mod IS NULL OR p.admin_mod = 'Approved'
     ORDER BY p.created_at DESC
     LIMIT 20
   `;
@@ -65,8 +67,10 @@ router.get("/fetchAllGroups", (req, res) => {
       g.location,
       g.creator_user_id,
       g.created_at,
+      g.admin_mod,
       (SELECT COUNT(*) FROM group_members gm WHERE gm.group_id = g.group_id) AS members
     FROM fitness_groups g
+    WHERE g.admin_mod = 'Active' OR g.admin_mod IS NULL
     ORDER BY members DESC, g.created_at DESC
   `;
 
@@ -84,7 +88,7 @@ router.get("/fetchAllGroups", (req, res) => {
 router.post("/createPost", verifyToken, (req, res) => {
   const { content, groupId, imageUrl } = req.body;
 
-  
+
   const userId = req.user.id;
   console.log("User ID from token:", userId);
 
@@ -121,7 +125,7 @@ router.post("/createPost", verifyToken, (req, res) => {
       success: true,
       message: "Post created successfully",
       postId: result.insertId,
-      imageUrl: imagePath 
+      imageUrl: imagePath
     });
   });
 });
@@ -192,7 +196,7 @@ router.post("/joinGroup", verifyToken, (req, res) => {
   const { groupId } = req.body;
 
   // Check if user ID exists in the token
-  
+
 
   const userId = req.user.id;
   console.log("User ID from token:", userId);
@@ -211,7 +215,7 @@ router.post("/joinGroup", verifyToken, (req, res) => {
     }
 
     if (results.length > 0) {
-      
+
       const leaveQuery = "DELETE FROM group_members WHERE user_id = ? AND group_id = ?";
 
       db.query(leaveQuery, [userId, groupId], (err) => {
@@ -255,7 +259,7 @@ router.get("/userGroups", verifyToken, (req, res) => {
     SELECT g.group_id AS id
     FROM fitness_groups g
     JOIN group_members gm ON g.group_id = gm.group_id
-    WHERE gm.user_id = ?
+    WHERE gm.user_id = ? AND (g.admin_mod = 'Active' OR g.admin_mod IS NULL)
   `;
 
   db.query(query, [userId], (err, results) => {
@@ -271,7 +275,7 @@ router.get("/userGroups", verifyToken, (req, res) => {
 
 
 router.get("/userLikes", verifyToken, (req, res) => {
-  
+
 
   const userId = req.user.id;
   console.log("User ID from token (userLikes):", userId);
@@ -312,9 +316,10 @@ router.get("/group/:id", (req, res) => {
       g.location,
       g.creator_user_id,
       g.created_at,
+      g.admin_mod,
       (SELECT COUNT(*) FROM group_members gm WHERE gm.group_id = g.group_id) AS members
     FROM fitness_groups g
-    WHERE g.group_id = ?
+    WHERE g.group_id = ? AND (g.admin_mod = 'Active' OR g.admin_mod IS NULL)
   `;
 
   db.query(groupQuery, [groupId], (err, groupResults) => {
@@ -329,7 +334,7 @@ router.get("/group/:id", (req, res) => {
 
     const group = {
       ...groupResults[0],
-      
+
     };
 
     // Get posts for this group
@@ -344,7 +349,7 @@ router.get("/group/:id", (req, res) => {
         p.content,
         p.image_url AS image,
         (SELECT COUNT(*) FROM likes l WHERE l.post_id = p.post_id) AS likes,
-        (SELECT COUNT(*) FROM comments c WHERE c.post_id = p.post_id) AS comments,
+        (SELECT COUNT(*) FROM comments c WHERE c.post_id = p.post_id AND (c.admin_mod IS NULL OR c.admin_mod = 'Approved')) AS comments,
         CASE
           WHEN TIMESTAMPDIFF(MINUTE, p.created_at, NOW()) < 60 THEN CONCAT(TIMESTAMPDIFF(MINUTE, p.created_at, NOW()), ' minutes ago')
           WHEN TIMESTAMPDIFF(HOUR, p.created_at, NOW()) < 24 THEN CONCAT(TIMESTAMPDIFF(HOUR, p.created_at, NOW()), ' hours ago')
@@ -353,11 +358,12 @@ router.get("/group/:id", (req, res) => {
         JSON_OBJECT(
           'id', g.group_id,
           'name', g.name
-        ) AS \`group\`
+        ) AS \`group\`,
+        p.admin_mod
       FROM posts p
       JOIN users u ON p.user_id = u.user_id
       JOIN fitness_groups g ON p.group_id = g.group_id
-      WHERE p.group_id = ?
+      WHERE p.group_id = ? AND (p.admin_mod IS NULL OR p.admin_mod = 'Approved')
       ORDER BY p.created_at DESC
     `;
 
@@ -428,9 +434,9 @@ router.get("/group/:id", (req, res) => {
 router.get("/fetchPartners", verifyToken, (req, res) => {
   // filter parameters from query string
   const maxDistance = req.query.distance || 20;
-  const interest = req.query.interest || 'all'; 
+  const interest = req.query.interest || 'all';
 
- 
+
   const userId = req.user.id;
 
   // Get user's location from the database
@@ -489,7 +495,7 @@ router.get("/fetchPartners", verifyToken, (req, res) => {
             sin(radians(SUBSTRING_INDEX(SUBSTRING_INDEX(REPLACE(REPLACE(u.location, '(', ''), ')', ''), ',', 1), ' ', -1)))
           )
         )  AS distance_miles, /* Convert km to miles */
-        
+
         FLOOR(5 + RAND() * 20) AS reviews /* Mock number of reviews */
       FROM users u
       LEFT JOIN user_rankings ur ON u.user_id = ur.user_id AND ur.is_current = TRUE
@@ -498,7 +504,7 @@ router.get("/fetchPartners", verifyToken, (req, res) => {
 
     const queryParams = [userLat, userLng, userLat, userId];
 
-    
+
     if (interest !== 'all') {
       query += `
         AND u.interests LIKE ?
@@ -519,9 +525,9 @@ router.get("/fetchPartners", verifyToken, (req, res) => {
         return res.status(500).json({ error: "Internal server error" });
       }
 
-      // Format 
+      // Format
       const partners = results.map(partner => {
-        
+
         let interests = [];
         try {
           if (partner.interests) {
@@ -532,7 +538,7 @@ router.get("/fetchPartners", verifyToken, (req, res) => {
           console.error("Error parsing interests:", e);
         }
 
-        
+
         const distanceStr = partner.distance_miles < 1
           ? `${Math.round(partner.distance_miles * 5280)} feet away`
           : `${partner.distance_miles.toFixed(1)} miles away`;
@@ -632,8 +638,8 @@ router.get("/userInterests", verifyToken, (req, res) => {
 
     if (results.length > 0 && results[0].interests) {
       try {
-        
-        interests = results[0].interests.split(/[,;|]+/).map(item => item.trim());      
+
+        interests = results[0].interests.split(/[,;|]+/).map(item => item.trim());
         interests = interests.filter(item => item.length > 0);
       } catch (e) {
         console.error("Error parsing interests:", e);
@@ -685,11 +691,11 @@ router.post("/sendConnectionRequest", verifyToken, (req, res) => {
         return res.status(500).json({ error: "Internal server error" });
       }
 
- 
+
       const incomingRequest = requests.find(req => req.user_id === receiverId && req.connected_user_id === senderId);
 
       if (incomingRequest) {
-        
+
         const acceptQuery = `
           UPDATE user_connections
           SET status = 'Accepted', updated_at = NOW()
@@ -1304,8 +1310,8 @@ router.delete("/post/:postId", verifyToken, (req, res) => {
     return res.status(400).json({ error: "Post ID is required" });
   }
 
-  // First check if the post belongs to the user
-  const checkOwnershipQuery = "SELECT user_id FROM posts WHERE post_id = ?";
+  // First check if the post belongs to the user and get image_url if exists
+  const checkOwnershipQuery = "SELECT user_id, image_url FROM posts WHERE post_id = ?";
 
   db.query(checkOwnershipQuery, [postId], (err, results) => {
     if (err) {
@@ -1321,22 +1327,45 @@ router.delete("/post/:postId", verifyToken, (req, res) => {
       return res.status(403).json({ error: "You can only delete your own posts" });
     }
 
-    // If the user owns the post, delete it
-    const deletePostQuery = "DELETE FROM posts WHERE post_id = ?";
+    // Check if post has an image and delete it
+    const imageUrl = results[0].image_url;
+    if (imageUrl) {
+      deleteImage(imageUrl);
+    }
 
-    db.query(deletePostQuery, [postId], (err, result) => {
+    // Delete associated comments first
+    const deleteCommentsQuery = "DELETE FROM comments WHERE post_id = ?";
+    db.query(deleteCommentsQuery, [postId], (err) => {
       if (err) {
-        console.error("Error deleting post:", err);
-        return res.status(500).json({ error: "Internal server error" });
+        console.error("Error deleting associated comments:", err);
+        // Continue with post deletion even if comment deletion fails
       }
 
-      if (result.affectedRows === 0) {
-        return res.status(404).json({ error: "Post not found" });
-      }
+      // Delete associated likes
+      const deleteLikesQuery = "DELETE FROM likes WHERE post_id = ?";
+      db.query(deleteLikesQuery, [postId], (err) => {
+        if (err) {
+          console.error("Error deleting associated likes:", err);
+          // Continue with post deletion even if likes deletion fails
+        }
 
-      res.json({
-        success: true,
-        message: "Post deleted successfully"
+        // Now delete the post
+        const deletePostQuery = "DELETE FROM posts WHERE post_id = ?";
+        db.query(deletePostQuery, [postId], (err, result) => {
+          if (err) {
+            console.error("Error deleting post:", err);
+            return res.status(500).json({ error: "Internal server error" });
+          }
+
+          if (result.affectedRows === 0) {
+            return res.status(404).json({ error: "Post not found" });
+          }
+
+          res.json({
+            success: true,
+            message: "Post deleted successfully"
+          });
+        });
       });
     });
   });
@@ -1462,13 +1491,14 @@ router.get("/comments/:postId", (req, res) => {
       c.content,
       c.created_at,
       c.updated_at,
+      c.admin_mod,
       u.first_name,
       u.last_name,
       u.username,
       u.profile_picture
     FROM comments c
     JOIN users u ON c.user_id = u.user_id
-    WHERE c.post_id = ?
+    WHERE c.post_id = ? AND (c.admin_mod IS NULL OR c.admin_mod = 'Approved')
     ORDER BY c.created_at ASC
   `;
 
@@ -1484,6 +1514,7 @@ router.get("/comments/:postId", (req, res) => {
       content: comment.content,
       createdAt: comment.created_at,
       updatedAt: comment.updated_at,
+      adminMod: comment.admin_mod,
       user: {
         id: comment.user_id,
         name: `${comment.first_name} ${comment.last_name}`,
@@ -1713,9 +1744,9 @@ router.delete("/comments/:commentId", verifyToken, (req, res) => {
       return res.status(403).json({ error: "You can only delete your own comments" });
     }
 
-    
+
     const postId = comment.post_id;
-     
+
     const deleteCommentQuery = "DELETE FROM comments WHERE comment_id = ?";
 
     db.query(deleteCommentQuery, [commentId], (err, result) => {
@@ -1724,7 +1755,7 @@ router.delete("/comments/:commentId", verifyToken, (req, res) => {
         return res.status(500).json({ error: "Internal server error" });
       }
 
-      // Update the comments count 
+      // Update the comments count
       const updatePostQuery = `
         UPDATE posts
         SET comments_count = GREATEST(IFNULL(comments_count, 0) - 1, 0)
@@ -1740,6 +1771,99 @@ router.delete("/comments/:commentId", verifyToken, (req, res) => {
       res.json({
         success: true,
         message: "Comment deleted successfully"
+      });
+    });
+  });
+});
+
+// Create a new group
+router.post("/createGroup", verifyToken, (req, res) => {
+  const { name, description, location, imageUrl } = req.body;
+  const userId = req.user.id;
+
+  if (!name) {
+    return res.status(400).json({ error: "Group name is required" });
+  }
+
+  // Process image if provided
+  let imagePath = null;
+  if (imageUrl) {
+    try {
+      // Save image to the system and get the path
+      imagePath = saveBase64Image(imageUrl);
+      if (!imagePath) {
+        console.warn("Failed to process image, continuing without image");
+      }
+    } catch (error) {
+      console.error("Error processing image:", error);
+    }
+  }
+
+  // Insert the new group into the database
+  const insertGroupQuery = `
+    INSERT INTO fitness_groups (name, description, location, image_url, creator_user_id, created_at, updated_at, admin_mod)
+    VALUES (?, ?, ?, ?, ?, NOW(), NOW(), 'Pending')
+  `;
+
+  db.query(insertGroupQuery, [name, description, location, imagePath, userId], (err, result) => {
+    if (err) {
+      console.error("Error creating group:", err);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+
+    const groupId = result.insertId;
+
+    // Add the creator as a member of the group with Admin role
+    const addMemberQuery = `
+      INSERT INTO group_members (group_id, user_id, role, join_date, status)
+      VALUES (?, ?, 'Admin', NOW(), 'Approved')
+    `;
+
+    db.query(addMemberQuery, [groupId, userId], (err) => {
+      if (err) {
+        console.error("Error adding creator as member:", err);
+        // Continue anyway since the group was created successfully
+      }
+
+      // Get the created group details
+      const getGroupQuery = `
+        SELECT
+          g.group_id AS id,
+          g.name,
+          g.description,
+          g.image_url AS image,
+          g.location,
+          g.creator_user_id,
+          g.created_at,
+          g.admin_mod,
+          1 AS members
+        FROM fitness_groups g
+        WHERE g.group_id = ?
+      `;
+
+      db.query(getGroupQuery, [groupId], (err, groups) => {
+        if (err) {
+          console.error("Error fetching created group:", err);
+          return res.status(201).json({
+            success: true,
+            message: "Group created successfully",
+            groupId: groupId
+          });
+        }
+
+        if (groups.length === 0) {
+          return res.status(201).json({
+            success: true,
+            message: "Group created successfully",
+            groupId: groupId
+          });
+        }
+
+        res.status(201).json({
+          success: true,
+          message: "Group created successfully",
+          group: groups[0]
+        });
       });
     });
   });

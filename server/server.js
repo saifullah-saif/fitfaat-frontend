@@ -15,7 +15,8 @@ const authRoutes = require("./routes/authRoutes.js");
 const marketplaceRoutes = require("./routes/marketplaceRoutes.js");
 const cartRoutes = require("./routes/cartRoutes.js");
 const communityRoutes = require("./routes/communityRoutes.js");
-
+const adminContentRoutes = require("./routes/admin-contentRoutes.js");
+const adminGroupRoutes = require("./routes/admin-groupRoutes.js");
 
 
 const app = express();
@@ -42,7 +43,8 @@ app.use("/auth", authRoutes);
 app.use("/marketplace", marketplaceRoutes);
 app.use("/cart", cartRoutes);
 app.use("/community", communityRoutes);
-
+app.use("/admin-content", adminContentRoutes);
+app.use("/admin-group", adminGroupRoutes);
 
 app.listen(5000, () => {
   console.log("Server started on port 5000");

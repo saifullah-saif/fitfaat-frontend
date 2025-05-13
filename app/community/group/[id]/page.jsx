@@ -111,7 +111,15 @@ export default function GroupPage() {
 
       if (data.group) {
         setGroup(data.group);
-        setGroupPosts(data.posts || []);
+
+        // Filter posts to only show approved ones
+        const approvedPosts = data.posts ? data.posts.filter(
+          post => post.admin_mod === undefined ||
+                 post.admin_mod === null ||
+                 post.admin_mod === 'Approved'
+        ) : [];
+
+        setGroupPosts(approvedPosts);
         setIsJoined(data.isMember);
       }
     } catch (error) {
@@ -290,10 +298,17 @@ export default function GroupPage() {
         withCredentials: true
       });
 
+      // Filter comments to only show approved ones
+      const approvedComments = response.data.filter(
+        comment => comment.adminMod === undefined ||
+                  comment.adminMod === null ||
+                  comment.adminMod === 'Approved'
+      );
+
       // Update the comments for this post
       setPostComments(prev => ({
         ...prev,
-        [postId]: response.data
+        [postId]: approvedComments
       }));
     } catch (error) {
       console.error("Error fetching comments:", error);

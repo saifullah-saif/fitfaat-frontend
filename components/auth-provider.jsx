@@ -103,7 +103,11 @@ export function AuthProvider({ children }) {
       if (data && data.user) {
         setUser(data.user);
         localStorage.setItem("fitfaat_user", JSON.stringify(data.user));
-        router.push("/dashboard");
+
+        // Use the redirectUrl from the server response based on user role
+        const redirectPath = data.redirectUrl || "/dashboard";
+        router.push(redirectPath);
+
         return { success: true };
       } else {
         return { success: false, error: "Invalid response from server" };

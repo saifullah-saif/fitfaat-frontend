@@ -231,13 +231,39 @@ export function WorkoutPlanner() {
   // Function to get the current user ID
   const getCurrentUserId = useCallback(async () => {
     try {
-      // In a real application, this would come from your authentication system
-      const response = await axios.get('http://localhost:5000/api/auth/current_user');
+      // Get user data from the authentication endpoint
+      const response = await axios.get('http://localhost:5000/auth/me', {
+        withCredentials: true // Important to include cookies for JWT authentication
+      });
+
       console.log("Current user response:", response.data);
-      return response.data.user_id;
+
+      // Extract user ID from the response
+      if (response.data && response.data.user) {
+        // Use user_id or id, whichever is available
+        const userId = response.data.user.user_id || response.data.user.id;
+        console.log("Using authenticated user ID:", userId);
+        return userId;
+      } else {
+        throw new Error("User data not found in response");
+      }
     } catch (error) {
       console.error("Error fetching current user:", error);
-      // Fallback to user_id 1 for development
+
+      // Try to get user from localStorage as fallback
+      try {
+        const storedUser = localStorage.getItem("fitfaat_user");
+        if (storedUser) {
+          const userData = JSON.parse(storedUser);
+          const userId = userData.user_id || userData.id;
+          console.log("Using user ID from localStorage:", userId);
+          return userId;
+        }
+      } catch (localStorageError) {
+        console.error("Error reading from localStorage:", localStorageError);
+      }
+
+      // Final fallback to user_id 1 for development
       addToast("Using default user (ID: 1). Please login for personalized experience.", 'warning');
       return 1;
     }
@@ -246,9 +272,16 @@ export function WorkoutPlanner() {
   // Load the current user ID when component mounts
   useEffect(() => {
     const loadUser = async () => {
-      const userId = await getCurrentUserId();
-      setCurrentUserId(userId);
-      setUserLoaded(true);
+      try {
+        const userId = await getCurrentUserId();
+        console.log("Setting current user ID to:", userId);
+        setCurrentUserId(userId);
+        setUserLoaded(true);
+      } catch (error) {
+        console.error("Failed to load user:", error);
+        // Still set userLoaded to true so the app can function with fallback
+        setUserLoaded(true);
+      }
     };
 
     loadUser();
@@ -456,8 +489,11 @@ export function WorkoutPlanner() {
 
   // Use effect to fetch saved user routines and logs on component mount
   useEffect(() => {
-    // Only proceed if user is loaded
-    if (userLoaded) {
+    // Only proceed if user is loaded and we have a valid user ID
+    if (userLoaded && currentUserId) {
+      console.log("User loaded with ID:", currentUserId, "- fetching user data");
+
+      // Fetch user routines, logs, and saved routines
       fetchUserRoutines();
       fetchWorkoutLogs();
       fetchUserSavedRoutines();
@@ -465,6 +501,7 @@ export function WorkoutPlanner() {
       // Fetch user rankings from database
       const fetchUserRankings = async () => {
         try {
+          console.log("Fetching rankings for user ID:", currentUserId);
           const response = await axios.get(`http://localhost:5000/api/workouts/fetch_user_rankings/${currentUserId}`);
           if (response.data) {
             setUserPoints({
@@ -472,9 +509,12 @@ export function WorkoutPlanner() {
               level: response.data.level || 1,
               rank: response.data.rank_title || 'Rookie'
             });
+            console.log("Updated user points:", response.data);
           }
         } catch (error) {
           console.error("Error fetching user rankings:", error);
+          // Set default user points if fetch fails
+          setUserPoints({ total: 0, level: 1, rank: 'Rookie' });
         }
       };
 
@@ -482,8 +522,12 @@ export function WorkoutPlanner() {
 
       // Check if we need to reset completed exercises for a new day
       checkAndResetDailyExercises();
+    } else if (userLoaded && !currentUserId) {
+      console.warn("User loaded but no user ID available - using default values");
+      // Set default values when user is loaded but no ID is available
+      setUserPoints({ total: 0, level: 1, rank: 'Rookie' });
     }
-    // When user ID loads, refetch data
+    // When user ID loads or changes, refetch data
   }, [userLoaded, currentUserId]);
 
   // Function to check if we need to reset completed exercises for a new day
@@ -613,20 +657,28 @@ export function WorkoutPlanner() {
 
   // Fetch user routines from the database
   const fetchUserRoutines = async () => {
-    // Skip if user is not loaded yet
-    if (!userLoaded) return;
+    // Skip if user is not loaded yet or no user ID is available
+    if (!userLoaded || !currentUserId) {
+      console.warn("Cannot fetch user routines: User not loaded or no user ID available");
+      return;
+    }
 
     try {
       setLoadingRoutines(true);
+      console.log("Fetching workout plans for user ID:", currentUserId);
 
       // First get the user's active workout plan
       const userPlansResponse = await axios.get('http://localhost:5000/api/workouts/fetch_user_workout_plans', {
         params: { user_id: currentUserId }
       });
 
+      console.log("Fetched user workout plans:", userPlansResponse.data);
+
       if (userPlansResponse.data.length > 0) {
         // Get the most recent active plan
         const activePlan = userPlansResponse.data.find(plan => plan.is_active) || userPlansResponse.data[0];
+        console.log("Active workout plan:", activePlan.name);
+
         setWorkoutPlan({
           name: activePlan.name,
           description: activePlan.description,
@@ -644,15 +696,19 @@ export function WorkoutPlanner() {
         setSelectedGoal(activePlan.workout_plan_id.toString());
 
         // Fetch the exercises for this plan
+        console.log("Fetching exercises for workout plan ID:", activePlan.workout_plan_id);
         const exercisesResponse = await axios.get(`http://localhost:5000/api/workouts/fetch_workout_plan_exercises/${activePlan.workout_plan_id}`);
 
         if (exercisesResponse.data.length > 0) {
+          console.log("Fetched exercises for workout plan:", exercisesResponse.data.length);
+
           // Also fetch logs to check if any of these exercises are completed
           const logsResponse = await axios.get('http://localhost:5000/api/workouts/fetch_user_workout_logs', {
             params: { user_id: currentUserId }
           });
 
           const completedExerciseLogs = logsResponse.data.filter(log => log.is_completed);
+          console.log("Found completed exercise logs:", completedExerciseLogs.length);
 
           // Format the exercises to match our routine format
           const fetchedRoutines = exercisesResponse.data.map(ex => {
@@ -683,14 +739,32 @@ export function WorkoutPlanner() {
             };
           });
 
+          console.log("Setting routines with fetched data:", fetchedRoutines.length);
           setRoutines(fetchedRoutines);
+        } else {
+          console.log("No exercises found for this workout plan");
+          setRoutines([]);
         }
+      } else {
+        console.log("No workout plans found for this user");
+        // Set default workout plan
+        setWorkoutPlan({
+          name: "My Custom Workout",
+          description: "Personalized workout plan",
+          goal_type: "General Fitness",
+          difficulty_level: "Beginner",
+          duration_weeks: 4,
+          days_per_week: 3,
+          is_default: false
+        });
+        setRoutines([]);
       }
 
       setLoadingRoutines(false);
     } catch (error) {
       console.error("Error fetching user routines:", error);
       setLoadingRoutines(false);
+      setRoutines([]);
     }
   };
 
@@ -765,18 +839,21 @@ export function WorkoutPlanner() {
 
   // Fetch workout logs - only show completed workouts in logs
   const fetchWorkoutLogs = async (showLogsDialog = false) => {
-    // Skip if user is not loaded yet
-    if (!userLoaded) return;
+    // Skip if user is not loaded yet or no user ID is available
+    if (!userLoaded || !currentUserId) {
+      console.warn("Cannot fetch workout logs: User not loaded or no user ID available");
+      return;
+    }
 
     try {
-      console.log("Fetching workout logs...");
+      console.log("Fetching workout logs for user ID:", currentUserId);
       const response = await axios.get('http://localhost:5000/api/workouts/fetch_user_workout_logs', {
         params: { user_id: currentUserId }
       });
 
       // Filter to only include completed logs for the logs view
       const logs = response.data;
-      console.log(`Fetched ${logs.length} logs from server`);
+      console.log(`Fetched ${logs.length} logs from server for user ID ${currentUserId}`);
 
       // Include both completed and skipped exercises in logs
       // (skipped exercises have is_completed set to false)
@@ -844,6 +921,7 @@ export function WorkoutPlanner() {
       }
     } catch (error) {
       console.error("Error fetching workout logs:", error);
+      setWorkoutLogs([]); // Set empty array on error
       if (showLogsDialog) {
         addToast("Failed to fetch workout logs. Please try again.", 'error');
       }
@@ -1265,21 +1343,39 @@ export function WorkoutPlanner() {
 
   // Fetch user saved routines from routines table
   const fetchUserSavedRoutines = async () => {
+    // Skip if no user ID is available
+    if (!currentUserId) {
+      console.warn("Cannot fetch user routines: No user ID available");
+      setLoadingUserRoutines(false);
+      return;
+    }
+
     try {
       setLoadingUserRoutines(true);
+      console.log("Fetching saved routines for user ID:", currentUserId);
+
       const response = await axios.get(`http://localhost:5000/api/workouts/fetch_user_routines/${currentUserId}`);
+      console.log("Fetched user routines:", response.data);
 
       setUserRoutines(response.data);
 
       // Find the active routine
       const active = response.data.find(routine => routine.status === 'Active');
-      setActiveRoutine(active || null);
+      if (active) {
+        console.log("Found active routine:", active.title);
+        setActiveRoutine(active);
+      } else {
+        console.log("No active routine found");
+        setActiveRoutine(null);
+      }
 
       setLoadingUserRoutines(false);
     } catch (error) {
       console.error("Error fetching user routines:", error);
       addToast("Failed to fetch your saved routines.", 'error');
       setLoadingUserRoutines(false);
+      setUserRoutines([]);
+      setActiveRoutine(null);
     }
   };
 

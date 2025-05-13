@@ -20,21 +20,18 @@ export function AuthProvider({ children }) {
     const checkAuthStatus = async () => {
       setLoading(true);
       try {
-        // For development, use the mock user instead of making API calls
-        // Comment this out when your backend is ready
-        setUser({
-          id: "mock-user-id",
-          email: "demo@example.com",
-          name: "Demo User",
-          avatar_url: null,
-        });
-        setIsAuthenticated(true);
-        setLoading(false);
-        return;
+        // Check if user data exists in localStorage
+        const storedUser = localStorage.getItem("fitfaat_user");
+        if (storedUser) {
+          const userData = JSON.parse(storedUser);
+          setUser(userData);
+          setIsAuthenticated(true);
+          setLoading(false);
+          return;
+        }
 
-        // Uncomment this when your backend is ready
-        /*
-        const response = await fetch("/api/auth/me", {
+        // Try to fetch user data from server
+        const response = await fetch("http://localhost:5000/auth/me", {
           method: "GET",
           credentials: "include",
         });
@@ -43,11 +40,12 @@ export function AuthProvider({ children }) {
           const userData = await response.json();
           setUser(userData);
           setIsAuthenticated(true);
+          localStorage.setItem("fitfaat_user", JSON.stringify(userData));
         } else {
           setUser(null);
           setIsAuthenticated(false);
+          localStorage.removeItem("fitfaat_user");
         }
-        */
       } catch (error) {
         console.error("Authentication check failed:", error);
         setUser(null);
@@ -56,7 +54,7 @@ export function AuthProvider({ children }) {
         setLoading(false);
       }
     };
-    
+
     checkAuthStatus();
   }, [])
 
@@ -224,21 +222,9 @@ export function AuthProvider({ children }) {
     user,
     loading,
     isAuthenticated,
-    login: async (email, password) => {
-      // Mock login for development
-      setUser({
-        id: "mock-user-id",
-        email: email || "demo@example.com",
-        name: "Demo User",
-        avatar_url: null,
-      });
-      setIsAuthenticated(true);
-      return true;
-    },
-    logout: () => {
-      setUser(null);
-      setIsAuthenticated(false);
-    }
+    login,
+    logout,
+    signup
   };
 
   return (

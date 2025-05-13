@@ -21,6 +21,7 @@ const adminGroupRoutes = require("./routes/admin-groupRoutes.js");
 const exerciseRoutes = require("./routes/exerciseRoutes.js");
 const workoutRoutes = require("./routes/workoutRoutes.js");
 const gymRoutes = require("./routes/gymRoutes.js");
+const rankingRoutes = require("./routes/rankingRoutes.js");
 
 const app = express();
 app.use(
@@ -53,6 +54,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/exercises", exerciseRoutes);
 app.use("/api/workouts", workoutRoutes);
 app.use("/api/gyms", gymRoutes);
+app.use("/api/rankings", rankingRoutes);
 
 app.listen(5000, () => {
   console.log("Server started on port 5000");

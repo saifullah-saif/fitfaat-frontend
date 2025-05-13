@@ -42,10 +42,7 @@ export function AdminDashboard() {
             <Users className="h-4 w-4" />
             <span>Users</span>
           </TabsTrigger>
-          <TabsTrigger value="progress" className="flex items-center gap-2">
-            <Activity className="h-4 w-4" />
-            <span>Progress</span>
-          </TabsTrigger>
+          
           <TabsTrigger value="inventory" className="flex items-center gap-2">
             <Package className="h-4 w-4" />
             <span>Inventory</span>
@@ -63,7 +60,7 @@ export function AdminDashboard() {
             <span>Content</span>
           </TabsTrigger>
           <TabsTrigger value="reports">Reports</TabsTrigger>
-          <TabsTrigger value="settings">Settings</TabsTrigger>
+          
         </TabsList>
 
         <TabsContent value="users" className="space-y-6">
@@ -78,17 +75,6 @@ export function AdminDashboard() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="progress" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Progress Monitoring</CardTitle>
-              <CardDescription>Monitor user progress, achievements, and fitness goals</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ProgressMonitoring />
-            </CardContent>
-          </Card>
-        </TabsContent>
 
         <TabsContent value="inventory" className="space-y-6">
           <Card>
@@ -150,19 +136,7 @@ export function AdminDashboard() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="settings" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Admin Settings</CardTitle>
-              <CardDescription>Configure admin dashboard settings and preferences</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="h-[400px] flex items-center justify-center border rounded-md">
-                <p className="text-muted-foreground">Settings functionality coming soon</p>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+        
       </Tabs>
     </div>
   )

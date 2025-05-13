@@ -101,9 +101,9 @@ function processCheckout(userId, req, res) {
    
     const cartId = cartResults[0].cart_id;
    
-    // Get cart items with product details to calculate totals
+    // Get cart items with product details to calculate totals and check stock
     const query = `
-      SELECT ci.cart_item_id, ci.quantity, p.price, p.product_id
+      SELECT ci.cart_item_id, ci.quantity, p.price, p.product_id, p.stock_quantity, p.name
       FROM cart_items ci
       JOIN products p ON ci.product_id = p.product_id
       WHERE ci.cart_id = ?
@@ -117,6 +117,21 @@ function processCheckout(userId, req, res) {
      
       if (!itemResults || itemResults.length === 0) {
         return res.status(400).json({ message: "Your cart is empty" });
+      }
+      
+      // Check if all items have sufficient stock
+      const insufficientStockItems = itemResults.filter(item => item.quantity > item.stock_quantity);
+      
+      if (insufficientStockItems.length > 0) {
+        // Create a detailed error message about which items don't have enough stock
+        const itemMessages = insufficientStockItems.map(item => 
+          `${item.name}: requested ${item.quantity}, only ${item.stock_quantity} available`
+        );
+        
+        return res.status(400).json({ 
+          message: "Order cannot be processed due to insufficient stock",
+          details: itemMessages
+        });
       }
      
       // Calculate totals
@@ -139,58 +154,110 @@ function processCheckout(userId, req, res) {
         status: 'Pending'
       };
      
-      // Insert the order
-      db.query(
-        `INSERT INTO orders SET ?`,
-        orderData,
-        (err, orderResult) => {
-          if (err) {
-            console.error("Error creating order:", err);
-            return res.status(500).json({ message: "Error creating order", error: err.message });
-          }
-         
-          const orderId = orderResult.insertId;
-          console.log(`Created order ID: ${orderId} for user ID: ${userId}`);
-         
-          // Insert order items
-          const orderItems = itemResults.map(item => [
-            orderId,
-            item.product_id,
-            item.quantity,
-            parseFloat(item.price).toFixed(2),
-            (parseFloat(item.price) * item.quantity).toFixed(2)
-          ]);
-         
-          const orderItemsQuery = `
-            INSERT INTO order_items
-            (order_id, product_id, quantity,price_per_unit, total_price)
-            VALUES ?
-          `;
-         
-          db.query(orderItemsQuery, [orderItems], (err) => {
+      // Start a transaction to ensure data consistency
+      db.beginTransaction(err => {
+        if (err) {
+          console.error("Error starting transaction:", err);
+          return res.status(500).json({ message: "Error starting transaction", error: err.message });
+        }
+        
+        // Insert the order
+        db.query(
+          `INSERT INTO orders SET ?`,
+          orderData,
+          (err, orderResult) => {
             if (err) {
-              console.error("Error creating order items:", err);
-              return res.status(500).json({ message: "Error creating order items", error: err.message });
+              return db.rollback(() => {
+                console.error("Error creating order:", err);
+                res.status(500).json({ message: "Error creating order", error: err.message });
+              });
             }
            
-            // Clear the cart after successful order - make sure this works
-            console.log(`Clearing cart ID: ${cartId} for user ID: ${userId}`);
-            db.query("DELETE FROM cart_items WHERE cart_id = ?", [cartId], (err) => {
+            const orderId = orderResult.insertId;
+            console.log(`Created order ID: ${orderId} for user ID: ${userId}`);
+           
+            // Insert order items
+            const orderItems = itemResults.map(item => [
+              orderId,
+              item.product_id,
+              item.quantity,
+              parseFloat(item.price).toFixed(2),
+              (parseFloat(item.price) * item.quantity).toFixed(2)
+            ]);
+           
+            const orderItemsQuery = `
+              INSERT INTO order_items
+              (order_id, product_id, quantity, price_per_unit, total_price)
+              VALUES ?
+            `;
+           
+            db.query(orderItemsQuery, [orderItems], (err) => {
               if (err) {
-                console.error("Error clearing cart:", err);
-                // Continue even if cart clearing fails, but log it
+                return db.rollback(() => {
+                  console.error("Error creating order items:", err);
+                  res.status(500).json({ message: "Error creating order items", error: err.message });
+                });
               }
-             
-              // Return the order details
-              res.status(201).json({
-                message: "Order created successfully",
-                orderId,
-                total: totalAmount.toFixed(2)
+              
+              // Update stock quantities for each product
+              const updatePromises = itemResults.map(item => {
+                return new Promise((resolve, reject) => {
+                  const newStockQuantity = item.stock_quantity - item.quantity;
+                  db.query(
+                    "UPDATE products SET stock_quantity = ? WHERE product_id = ?",
+                    [newStockQuantity, item.product_id],
+                    (err) => {
+                      if (err) {
+                        console.error(`Error updating stock for product ${item.product_id}:`, err);
+                        reject(err);
+                      } else {
+                        console.log(`Updated stock for product ${item.product_id} to ${newStockQuantity}`);
+                        resolve();
+                      }
+                    }
+                  );
+                });
               });
+              
+              Promise.all(updatePromises)
+                .then(() => {
+                  // Clear the cart after successful order
+                  db.query("DELETE FROM cart_items WHERE cart_id = ?", [cartId], (err) => {
+                    if (err) {
+                      return db.rollback(() => {
+                        console.error("Error clearing cart:", err);
+                        res.status(500).json({ message: "Error clearing cart", error: err.message });
+                      });
+                    }
+                    
+                    // Commit the transaction
+                    db.commit(err => {
+                      if (err) {
+                        return db.rollback(() => {
+                          console.error("Error committing transaction:", err);
+                          res.status(500).json({ message: "Error finalizing order", error: err.message });
+                        });
+                      }
+                      
+                      // Return the order details
+                      res.status(201).json({
+                        message: "Order created successfully",
+                        orderId,
+                        total: totalAmount.toFixed(2)
+                      });
+                    });
+                  });
+                })
+                .catch(err => {
+                  db.rollback(() => {
+                    console.error("Error updating product stock quantities:", err);
+                    res.status(500).json({ message: "Error updating product stock", error: err.message });
+                  });
+                });
             });
-          });
-        }
-      );
+          }
+        );
+      });
     });
   });
 }

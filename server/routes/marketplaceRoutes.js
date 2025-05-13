@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const db = require("../db");
 const { verifyToken } = require("../middleware/authMiddleware");
-//const marketplace = require("../marketplace.js");
+
 
 // Health check route
 router.get("/test", (req, res) => {

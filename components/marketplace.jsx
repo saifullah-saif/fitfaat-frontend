@@ -5,7 +5,6 @@ import axios from "axios"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Star, Search, ShoppingCart, Plus, Minus, Heart } from "lucide-react"
@@ -18,6 +17,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog"
 import { toast } from "@/hooks/use-toast"
+import { Toaster } from "@/components/ui/toaster"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useAuth } from "@/components/auth-provider";
 import { useCart } from "@/components/navbar";
@@ -33,14 +33,7 @@ const api = axios.create({
   withCredentials: true,
 });
 
-// Initial empty products array
-const categories = [
-  { id: "all", name: "All Products" },
-  { id: "supplements", name: "Supplements" },
-  { id: "equipment", name: "Equipment" },
-  { id: "wearables", name: "Wearables" },
-  { id: "clothing", name: "Clothing" },
-]
+// Component for marketplace functionality
 
 export function Marketplace() {
   const { user } = useAuth();
@@ -204,7 +197,7 @@ export function Marketplace() {
       if (!query.trim()) {
         // If search is empty, fetch all products with ratings
         try {
-          setLoading(true);
+          // Don't set loading state for search operations
           console.log("Fetching all products with ratings (from search)");
 
           // Use the sort endpoint which includes ratings
@@ -253,14 +246,12 @@ export function Marketplace() {
             console.error("Error message:", err.message);
             setError(`Error: ${err.message}`);
           }
-        } finally {
-          setLoading(false);
         }
         return;
       }
 
       try {
-        setLoading(true);
+        // Don't set loading state for search operations
         console.log(`Searching for products with query: "${query}"`);
 
         const response = await api.get(`/marketplace/api/products/search?q=${encodeURIComponent(query)}`);
@@ -347,8 +338,6 @@ export function Marketplace() {
           console.error("Error message:", err.message);
           setError(`Error: ${err.message}`);
         }
-      } finally {
-        setLoading(false);
       }
     }, 300); // 300ms debounce delay
 
@@ -545,6 +534,7 @@ export function Marketplace() {
       toast({
         title: "Rating submitted",
         description: "Thank you for your feedback!",
+        duration: 3000, // Show for 3 seconds
       });
     } catch (err) {
       console.error("Error submitting rating:", err);
@@ -559,6 +549,7 @@ export function Marketplace() {
         title: "Error",
         description: errorMessage,
         variant: "destructive",
+        duration: 4000, // Show for 4 seconds
       });
     }
   }
@@ -573,6 +564,20 @@ export function Marketplace() {
           title: "Please log in",
           description: "You need to be logged in to add items to your cart",
           variant: "destructive",
+        });
+        return;
+      }
+
+      // Check if the product is already in the cart
+      const existingItem = cart.find((item) => item.id === product.id);
+
+      // Check if adding the requested quantity would exceed the available stock
+      if (existingItem && existingItem.quantity + qty > product.stock) {
+        toast({
+          title: "Not enough stock",
+          description: `You already have ${existingItem.quantity} in your cart. Only ${product.stock} items available in total.`,
+          variant: "destructive",
+          duration: 4000, // Show for 4 seconds
         });
         return;
       }
@@ -592,8 +597,6 @@ export function Marketplace() {
       console.log("Add to cart response:", response.data);
 
       // Update local cart state
-      const existingItem = cart.find((item) => item.id === product.id);
-
       if (existingItem) {
         // Update quantity if product already exists in cart
         setCart(cart.map((item) => (item.id === product.id ? { ...item, quantity: item.quantity + qty } : item)));
@@ -611,13 +614,7 @@ export function Marketplace() {
       toast({
         title: "Added to cart",
         description: `${qty} × ${product.name} added to your cart`,
-        action: (
-          <div className="flex items-center gap-2">
-            <Button size="sm" variant="outline" asChild>
-              <a href="/checkout">View Cart</a>
-            </Button>
-          </div>
-        ),
+        duration: 3000, // Show for 3 seconds
       });
 
       // Close the product dialog after adding to cart
@@ -645,6 +642,7 @@ export function Marketplace() {
         title: "Error",
         description: errorMessage,
         variant: "destructive",
+        duration: 4000, // Show for 4 seconds
       });
     }
   };
@@ -656,6 +654,7 @@ export function Marketplace() {
         title: "Please log in",
         description: "You need to be logged in to add items to your wishlist",
         variant: "destructive",
+        duration: 4000, // Show for 4 seconds
       });
       return;
     }
@@ -680,6 +679,7 @@ export function Marketplace() {
         toast({
           title: "Removed from wishlist",
           description: `${product.name} removed from your wishlist`,
+          duration: 3000, // Show for 3 seconds
         });
       } else {
         console.error("Wishlist item found but could not be retrieved");
@@ -692,6 +692,7 @@ export function Marketplace() {
       toast({
         title: "Added to wishlist",
         description: `${product.name} added to your wishlist`,
+        duration: 3000, // Show for 3 seconds
       });
     }
   };
@@ -743,62 +744,7 @@ export function Marketplace() {
     fetchCart();
   }, [user]);
 
-  // Add a function to update cart item quantity
-  const updateCartItemQuantity = async (itemId, newQuantity) => {
-    try {
-      if (newQuantity < 1) return;
 
-      const response = await api.put(`/cart/update/${itemId}`, { quantity: newQuantity });
-      console.log("Update cart response:", response.data);
-
-      // Update local cart state
-      setCart(cart.map(item =>
-        item.id === itemId ? { ...item, quantity: newQuantity } : item
-      ));
-
-      toast({
-        title: "Cart updated",
-        description: "Item quantity updated successfully",
-      });
-    } catch (err) {
-      console.error("Error updating cart item:", err);
-
-      let errorMessage = "Failed to update item";
-      if (err.response && err.response.status === 400 && err.response.data.message === "Not enough stock") {
-        errorMessage = `Only ${err.response.data.available} items available`;
-      }
-
-      toast({
-        title: "Error",
-        description: errorMessage,
-        variant: "destructive",
-      });
-    }
-  };
-
-  // Add a function to remove item from cart
-  const removeCartItem = async (itemId) => {
-    try {
-      const response = await api.delete(`/cart/remove/${itemId}`);
-      console.log("Remove from cart response:", response.data);
-
-      // Update local cart state
-      setCart(cart.filter(item => item.id !== itemId));
-
-      toast({
-        title: "Item removed",
-        description: "Item removed from your cart",
-      });
-    } catch (err) {
-      console.error("Error removing cart item:", err);
-
-      toast({
-        title: "Error",
-        description: "Failed to remove item from cart",
-        variant: "destructive",
-      });
-    }
-  };
 
   return (
     <div className="flex flex-col gap-6 p-4 md:p-8 max-w-6xl mx-auto w-full">
@@ -844,8 +790,8 @@ export function Marketplace() {
         </div>
       </div>
 
-      {/* Loading state */}
-      {loading && (
+      {/* Loading state - only show on initial load, not during search */}
+      {loading && !searchQuery && (
         <div className="flex flex-col items-center justify-center py-12">
           <p className="text-lg font-medium">Loading products...</p>
           <p className="text-muted-foreground">Please wait while we fetch the products</p>
@@ -987,21 +933,20 @@ export function Marketplace() {
                     <Button
                       className="flex-1 relative"
                       onClick={() => {
-                        // Add the product to the cart
-                        addToCart(selectedProduct, quantity)
-                        window.location.reload();
-                        // Show visual feedback
+                        // First show the toast notification
                         toast({
                           title: "Added to cart",
                           description: `${quantity} × ${selectedProduct.name} added to your cart`,
-                          action: (
-                            <div className="flex items-center gap-2">
-                              <Button size="sm" variant="outline" asChild>
-                                <a href="/checkout">View Cart</a>
-                              </Button>
-                            </div>
-                          ),
+                          duration: 3000, // Show for 3 seconds
                         })
+
+                        // Then add to cart
+                        addToCart(selectedProduct, quantity)
+
+                        // Delay the page reload to ensure toast is visible
+                        setTimeout(() => {
+                          window.location.reload();
+                        }, 2000); // 2 seconds delay
                       }}
                     >
                       <ShoppingCart className="mr-2 h-4 w-4" />
@@ -1095,6 +1040,7 @@ export function Marketplace() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <Toaster />
     </div>
   )
 }

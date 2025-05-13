@@ -1,6 +1,5 @@
-// app/admin/page.jsx
-import Admin from '@/components/admin/Admin';
+import { AdminDashboard } from '@/components/admin/admin-dashboard';
 
 export default function AdminPage() {
-  return <Admin />;
+  return <AdminDashboard />;
 }

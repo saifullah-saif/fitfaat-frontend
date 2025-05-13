@@ -74,7 +74,7 @@ const navItems = [
   { name: "Workout", href: "/workout", icon: Dumbbell },
   { name: "Community", href: "/community", icon: Users },
   { name: "Marketplace", href: "/marketplace", icon: ShoppingBag },
-  { name: "Admin", href: "/admin-dashboard", icon: Shield },
+  { name: "Admin", href: "/admin", icon: Shield },
 ]
 
 export function Navbar() {

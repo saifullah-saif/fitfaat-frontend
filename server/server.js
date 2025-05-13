@@ -13,7 +13,7 @@ if (!fs.existsSync(uploadsDir)) {
 
 const profileRoutes = require("./routes/profileRoutes.js");
 const authRoutes = require("./routes/authRoutes.js");
-const adminLoginRoutes = require("./routes/adminLoginRoutes.js");
+
 const adminUsersRoutes = require("./routes/adminUsersRoutes.js");
 const adminfeedbackRoutes = require("./routes/adminfeedbackRoutes.js");
 const foodRoutes = require("./routes/foodRoutes.js");
@@ -50,18 +50,24 @@ app.use(bodyParser.urlencoded({ extended: true })); // For parsing application/x
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // ✅ Routes
-app.use("/auth", authRoutes);
-app.use("/api/admin/login", adminLoginRoutes);
+
 app.use("/api/admin/users", adminUsersRoutes);
 app.use("/api/foods", foodRoutes);
 app.use("/api/inventory", inventoryRoutes);
-//app.use("/api/feedback", feedbackRoutes);
-//app.use("/api/feedback/users", feedbackusersRoutes);
 app.use("/api/dashboard/diet", dashboarddietRoutes);
 app.use("/api/profile", profileRoutes);
 app.use("/api/onboarding", onboardingRoutes);
 app.use("/api/admin/feedback", adminfeedbackRoutes);
 app.use("/api/feedback", feedbackRoutes);
+
+app.use("/marketplace", marketplaceRoutes);
+app.use("/cart", cartRoutes);
+
+// Saif
+app.use("/auth", authRoutes);
+app.use("/community", communityRoutes);
+app.use("/admin-content", adminContentRoutes);
+app.use("/admin-group", adminGroupRoutes);
 
 
 // ✅ Global Error Handling Middleware
@@ -69,12 +75,6 @@ app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({ message: "Internal Server Error", error: err.message });
 });
-
-app.use("/marketplace", marketplaceRoutes);
-app.use("/cart", cartRoutes);
-app.use("/community", communityRoutes);
-app.use("/admin-content", adminContentRoutes);
-app.use("/admin-group", adminGroupRoutes);
 
 app.listen(5000, () => {
   console.log("Server started on port 5000");

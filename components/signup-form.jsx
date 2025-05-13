@@ -1,8 +1,5 @@
 "use client"
-import axios from "axios"
 import { useState, useEffect } from "react"
-
-import { useRouter } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
@@ -11,6 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader } from "@/components/ui/card"
 import { AlertCircle } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { useAuth } from "@/components/auth-provider"
 
 export function SignupForm() {
   const [username, setUsername] = useState("");
@@ -26,7 +24,7 @@ export function SignupForm() {
   const [successMessage, setSuccessMessage] = useState("")
   const [theme, setTheme] = useState("dark")
 
-  const router = useRouter()
+  const auth = useAuth()
 
   // Check theme
   useEffect(() => {
@@ -48,34 +46,24 @@ export function SignupForm() {
     }
 
     try {
-      await axios.post(
-        "http://localhost:5000/auth/signup",
-        {
-          username,
-          email,
-          password,
-          first_name,
-          last_name,
-          date_of_birth,
-          gender,
-          location
-        },
-        {
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          withCredentials: true
-        }
-      );
+      // Use the auth context's signup function
+      const result = await auth.signup(username, email, password, {
+        first_name,
+        last_name,
+        date_of_birth,
+        gender,
+        location
+      });
 
-      setSuccessMessage("Account created successfully!");
-      // Redirect to login page after successful signup
-      setTimeout(() => {
-        router.push("/login");
-      }, 1500);
+      if (result.success) {
+        setSuccessMessage("Account created successfully! Redirecting to login...");
+        // The auth provider will handle redirection to login
+      } else {
+        setError(result.error || "Signup failed. Please try again.");
+      }
     } catch (error) {
       console.error("Signup error:", error);
-      setError(error.response?.data?.error || "Signup failed. Please try again.");
+      setError("An unexpected error occurred. Please try again.");
     } finally {
       setIsLoading(false);
     }

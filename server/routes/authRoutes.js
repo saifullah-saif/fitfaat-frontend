@@ -1,6 +1,3 @@
-
-
-
 const express = require("express");
 const bcrypt = require("bcrypt");
 const db = require("../db.js");
@@ -187,4 +184,4 @@ router.get("/me", verifyToken, (req, res) => {
   });
 });
 
-module.exports = router;
+module.exports = router;ss

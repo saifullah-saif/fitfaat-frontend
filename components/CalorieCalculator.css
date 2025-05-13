@@ -1,0 +1,85 @@
+/* CalorieCalculator.css */
+
+body {
+    margin: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(to bottom right, #ff7e5f, #2c2c2c);
+    color: white;
+  }
+  
+  .calorie-calc-page {
+    max-width: 700px;
+    margin: 4rem auto;
+    padding: 2rem;
+    background: rgba(0, 0, 0, 0.6);
+    border-radius: 20px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+    text-align: center;
+  }
+  
+  .calorie-calc-page h2 {
+    font-size: 2rem;
+    margin-bottom: 2rem;
+    color: #ffb26b;
+  }
+  
+  .calorie-inputs {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    padding: 1rem;
+  }
+  
+  .calorie-inputs input,
+  .calorie-inputs select {
+    padding: 1rem;
+    font-size: 1.1rem;
+    border-radius: 10px;
+    border: none;
+    outline: none;
+    background: #333;
+    color: #fff;
+    box-shadow: 0 4px 10px rgba(255, 165, 0, 0.3);
+    transition: transform 0.2s ease-in-out;
+  }
+  
+  .calorie-inputs input:focus,
+  .calorie-inputs select:focus {
+    transform: scale(1.02);
+    box-shadow: 0 0 10px rgba(255, 140, 0, 0.8);
+  }
+  
+  .calorie-inputs button {
+    background: #ff6a00;
+    color: #fff;
+    padding: 1rem;
+    font-size: 1.2rem;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: background 0.3s ease, transform 0.2s ease-in-out;
+  }
+  
+  .calorie-inputs button:hover {
+    background: #ff8533;
+    transform: translateY(-2px);
+  }
+  
+  .calorie-result {
+    background-color: rgba(255, 255, 255, 0.1);
+    margin-top: 2rem;
+    padding: 2rem;
+    border-radius: 15px;
+    font-size: 1.2rem;
+    color: #f8f8f8;
+    line-height: 1.6;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+    white-space: pre-wrap;
+  }
+  
+  .calorie-result h3 {
+    margin-bottom: 1rem;
+    font-size: 1.5rem;
+    color: #ffa94d;
+  }
+  

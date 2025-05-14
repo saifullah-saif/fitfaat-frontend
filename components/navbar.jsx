@@ -21,6 +21,9 @@ import {
   Heart,
   Shield,
   Package,
+  Clock,
+  CheckCircle,
+  Truck,
 } from "lucide-react"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { useAuth } from "@/components/auth-provider"
@@ -74,7 +77,7 @@ const navItems = [
   { name: "Workout", href: "/workout", icon: Dumbbell },
   { name: "Community", href: "/community", icon: Users },
   { name: "Marketplace", href: "/marketplace", icon: ShoppingBag },
-  { name: "Admin", href: "/admin", icon: Shield },
+  { name: "Admin", href: "/admin", icon: Shield, adminOnly: true },
 ]
 
 export function Navbar() {
@@ -324,7 +327,7 @@ export function Navbar() {
               <div className="flex-1"></div>
               <nav className="flex items-center justify-center space-x-4 flex-1">
                 {navItems
-                  .filter(item => item.name !== "Admin" || (user && user.role === "Admin"))
+                  .filter(item => !item.adminOnly || (user?.role === "Admin"))
                   .map((item) => (
                     <Link
                       key={item.name}
@@ -432,7 +435,7 @@ export function Navbar() {
           <div className="fixed inset-0 top-14 z-40 bg-background border-t md:hidden">
             <nav className="grid gap-1 p-4">
               {navItems
-                .filter(item => item.name !== "Admin" || (user && user.role === "Admin"))
+                .filter(item => !item.adminOnly || (user?.role === "Admin"))
                 .map((item) => (
                   <Link
                     key={item.name}
@@ -824,5 +827,18 @@ export function Navbar() {
     </CartContext.Provider>
   )
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 

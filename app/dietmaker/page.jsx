@@ -1,4 +1,4 @@
-import { Diet } from "@/components/Diet"
+import { Diet } from "@/components/diet"
 
 export default function DietPage() {
   return <Diet />

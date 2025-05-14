@@ -15,6 +15,7 @@ const profileRoutes = require("./routes/profileRoutes.js");
 const authRoutes = require("./routes/authRoutes.js");
 
 const adminUsersRoutes = require("./routes/adminUsersRoutes.js");
+const adminOrderRoutes = require("./routes/adminOrderRoutes.js");
 const adminfeedbackRoutes = require("./routes/adminfeedbackRoutes.js");
 const foodRoutes = require("./routes/foodRoutes.js");
 const feedbackRoutes = require("./routes/feedbackRoutes.js");
@@ -30,6 +31,7 @@ const adminGroupRoutes = require("./routes/admin-groupRoutes.js");
 const exerciseRoutes = require("./routes/exerciseRoutes.js");
 const workoutRoutes = require("./routes/workoutRoutes.js");
 const gymRoutes = require("./routes/gymRoutes.js");
+const rankingRoutes = require("./routes/rankingRoutes.js");
 
 const app = express();
 app.use(
@@ -53,9 +55,12 @@ app.use(bodyParser.urlencoded({ extended: true })); // For parsing application/x
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 app.use(bodyParser.json());
+
+app.use("/auth", authRoutes);
 // ✅ Routes
 
 app.use("/api/admin/users", adminUsersRoutes);
+app.use("/api/admin/orders", adminOrderRoutes);
 app.use("/api/foods", foodRoutes);
 app.use("/api/inventory", inventoryRoutes);
 app.use("/api/dashboard/diet", dashboarddietRoutes);
@@ -76,6 +81,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/exercises", exerciseRoutes);
 app.use("/api/workouts", workoutRoutes);
 app.use("/api/gyms", gymRoutes);
+app.use("/api/rankings", rankingRoutes);
 
 
 // ✅ Global Error Handling Middleware

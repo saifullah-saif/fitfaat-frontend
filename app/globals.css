@@ -210,3 +210,70 @@ body {
   animation: shine 3s ease-in-out infinite;
   background-size: 200% 100%;
 }
+
+/* Rank title animations with different colors */
+.rank-rookie {
+  background: linear-gradient(90deg, #94a3b8 0%, #cbd5e1 50%, #94a3b8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: shine 3s ease-in-out infinite;
+  background-size: 200% auto;
+}
+
+.rank-contender {
+  background: linear-gradient(90deg, #60a5fa 0%, #3b82f6 50%, #60a5fa 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: shine 3s ease-in-out infinite;
+  background-size: 200% auto;
+}
+
+.rank-challenger {
+  background: linear-gradient(90deg, #4ade80 0%, #22c55e 50%, #4ade80 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: shine 3s ease-in-out infinite;
+  background-size: 200% auto;
+}
+
+.rank-veteran {
+  background: linear-gradient(90deg, #facc15 0%, #eab308 50%, #facc15 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: shine 3s ease-in-out infinite;
+  background-size: 200% auto;
+}
+
+.rank-overachiever {
+  background: linear-gradient(90deg, #f87171 0%, #ef4444 50%, #f87171 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: shine 3s ease-in-out infinite;
+  background-size: 200% auto;
+}
+
+/* Workout streak animations */
+@keyframes rotate {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Progress circle styles */
+.progress-circle-track {
+  stroke-width: 12;
+  opacity: 0.3;
+}
+
+.progress-circle-fill {
+  stroke-width: 12;
+  stroke-linecap: round;
+}
+
+.progress-rotate {
+  animation: rotate 60s infinite linear;
+}

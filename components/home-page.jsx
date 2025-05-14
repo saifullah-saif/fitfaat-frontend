@@ -232,7 +232,7 @@ function HeroSection() {
             transition={{ duration: 0.5, delay: 0.2 }}
             className="relative h-[400px] w-full rounded-xl overflow-hidden shadow-2xl"
           >
-            <Image src="/placeholder.svg?key=elb3f" alt="FitFaat App Dashboard" fill className="object-cover" />
+            <Image src="https://media.istockphoto.com/id/1287910461/photo/cheerful-fit-couple-on-white-background.jpg?s=612x612&w=0&k=20&c=wRuD6hog_RoPPuMy3S-tpjzuY_1biPCjeAG_HBm6JTQ=" alt="FitFaat App Dashboard" fill className="object-cover" />
           </motion.div>
         </div>
       </div>

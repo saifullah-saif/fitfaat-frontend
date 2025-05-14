@@ -136,11 +136,7 @@ export function Profile() {
       </div>
 
       <Tabs defaultValue="info" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="info">Personal Info</TabsTrigger>
-          <TabsTrigger value="goals">Goals & Progress</TabsTrigger>
-          <TabsTrigger value="settings">Settings</TabsTrigger>
-        </TabsList>
+        
 
         <TabsContent value="info" className="space-y-4">
           <Card>
@@ -289,45 +285,7 @@ export function Profile() {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Physical Information</CardTitle>
-              <CardDescription>Update your physical measurements for accurate tracking.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="weight">Weight</Label>
-                  <div className="flex items-center gap-2">
-                    <Weight className="h-4 w-4 text-muted-foreground" />
-                    <Input id="weight" defaultValue="75.5" />
-                    <span className="text-sm text-muted-foreground">kg</span>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="height">Height</Label>
-                  <div className="flex items-center gap-2">
-                    <Ruler className="h-4 w-4 text-muted-foreground" />
-                    <Input id="height" defaultValue="180" />
-                    <span className="text-sm text-muted-foreground">cm</span>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="bmi">BMI</Label>
-                  <div className="flex items-center gap-2">
-                    <Input id="bmi" defaultValue="23.3" disabled />
-                    <span className="text-sm text-muted-foreground">kg/m²</span>
-                  </div>
-                </div>
-              </div>
-              <div className="flex justify-end">
-                <Button>
-                  <Save className="mr-2 h-4 w-4" />
-                  Save Changes
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          
         </TabsContent>
 
         <TabsContent value="goals" className="space-y-4">

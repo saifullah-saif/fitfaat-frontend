@@ -2275,8 +2275,8 @@ export function WorkoutPlanner() {
               <>
                 <div className="mb-6">
                   {activeWorkoutPlanId && !changingGoal ? (
-                    // Display current active goal with sliding animation
-                    <div className="p-4 bg-muted rounded-md animate-in fade-in slide-in-from-top-5 duration-300 hover:shadow-md transition-all hover:scale-[1.02] border border-transparent hover:border-primary/20 relative overflow-hidden group">
+                    // Display current active goal without animation
+                    <div className="p-4 bg-muted rounded-md hover:shadow-md transition-all border border-transparent hover:border-primary/20 relative overflow-hidden group">
 
 
                       {workoutGoals.map(goal => {
@@ -2284,9 +2284,8 @@ export function WorkoutPlanner() {
                           return (
                             <div key={goal.id} className="space-y-3">
                               <div className="flex justify-between items-center">
-                                <h2 className="text-2xl font-bold text-primary animate-in fade-in-50 duration-500 relative inline-block">
+                                <h2 className="text-2xl font-bold text-primary relative inline-block">
                                   <span className="relative z-10">{goal.name}</span>
-                                  <span className="absolute inset-0 bg-primary/10 blur-lg opacity-0 group-hover:opacity-50 transition-opacity duration-700"></span>
                                 </h2>
                                 <Button
                                   variant="outline"
@@ -2298,9 +2297,9 @@ export function WorkoutPlanner() {
                                   <span className="relative z-10">Change Goal</span>
                                 </Button>
                               </div>
-                              <p className="text-sm animate-in fade-in-75 slide-in-from-left-3 duration-300 delay-100"><span className="font-medium">Description:</span> {goal.description}</p>
-                              <p className="text-sm animate-in fade-in-75 slide-in-from-left-3 duration-300 delay-150"><span className="font-medium">Goal Type:</span> {goal.goal_type}</p>
-                              <div className="flex items-center animate-in fade-in-75 slide-in-from-left-3 duration-300 delay-200">
+                              <p className="text-sm"><span className="font-medium">Description:</span> {goal.description}</p>
+                              <p className="text-sm"><span className="font-medium">Goal Type:</span> {goal.goal_type}</p>
+                              <div className="flex items-center">
                                 <span className="text-sm font-medium mr-2">Difficulty:</span>
                                 <span className="text-xs px-2 py-1 rounded-full transition-all duration-300 hover:scale-105"
                                   style={{

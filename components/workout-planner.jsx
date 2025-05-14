@@ -3040,17 +3040,17 @@ export function WorkoutPlanner() {
                         {/* Left side - Image */}
                         <div className="w-1/3 relative overflow-hidden">
                           {exercise.image_url ? (
-                            <div className="h-full overflow-hidden">
+                            <div className="aspect-square overflow-hidden">
                               <img
                                 src={exercise.image_url}
                                 alt={exercise.name}
-                                className="w-full h-full object-cover transition-all duration-500 group-hover:scale-110"
+                                className="w-full h-full object-cover object-center"
                               />
-                              <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100"></div>
                           </div>
                           ) : (
-                            <div className="h-full flex items-center justify-center bg-muted">
-                              <Dumbbell className="h-10 w-10 text-muted-foreground transition-all duration-300 group-hover:scale-110" />
+                            <div className="aspect-square flex items-center justify-center bg-muted">
+                              <Dumbbell className="h-10 w-10 text-muted-foreground" />
                             </div>
                           )}
                           <div className="absolute top-2 left-2 rounded-full px-2 py-1 text-xs transition-transform duration-300 group-hover:scale-110 bg-black/70 text-white"
@@ -3153,11 +3153,13 @@ export function WorkoutPlanner() {
               <div className="flex gap-4 animate-in fade-in duration-700">
                 {selectedExercise.image_url ? (
                   <div className="w-1/4 rounded-md overflow-hidden">
-                    <img
-                      src={selectedExercise.image_url}
-                      alt={selectedExercise.name}
-                      className="w-full h-full object-cover transition-all duration-300 hover:scale-105"
-                    />
+                    <div className="aspect-square">
+                      <img
+                        src={selectedExercise.image_url}
+                        alt={selectedExercise.name}
+                        className="w-full h-full object-cover object-center"
+                      />
+                    </div>
                   </div>
                 ) : (
                   <div className="w-1/4 aspect-square rounded-md bg-muted flex items-center justify-center">

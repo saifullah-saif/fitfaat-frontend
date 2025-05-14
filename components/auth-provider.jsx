@@ -121,7 +121,11 @@ export function AuthProvider({ children }) {
       // Store user data in localStorage
       if (data && data.user) {
         setUser(data.user);
+        setIsAuthenticated(true);
         localStorage.setItem("fitfaat_user", JSON.stringify(data.user));
+
+        // Dispatch a custom event to notify components about auth state change
+        window.dispatchEvent(new CustomEvent('auth_state_changed', { detail: { isAuthenticated: true } }));
 
         // Check if user needs onboarding based on server response
         const needsOnboarding = data.user.needsOnboarding;
@@ -143,7 +147,11 @@ export function AuthProvider({ children }) {
       if (process.env.NODE_ENV === "development") {
         console.log("Using mock user for development");
         setUser(mockUser);
+        setIsAuthenticated(true);
         localStorage.setItem("fitfaat_user", JSON.stringify(mockUser));
+
+        // Dispatch a custom event to notify components about auth state change
+        window.dispatchEvent(new CustomEvent('auth_state_changed', { detail: { isAuthenticated: true } }));
 
         // Set a flag to redirect to onboarding after login
         localStorage.setItem("redirect_to_onboarding", "true");
@@ -240,13 +248,23 @@ export function AuthProvider({ children }) {
 
       // Clear local user data
       setUser(null)
+      setIsAuthenticated(false)
       localStorage.removeItem("fitfaat_user")
+
+      // Dispatch a custom event to notify components about auth state change
+      window.dispatchEvent(new CustomEvent('auth_state_changed', { detail: { isAuthenticated: false } }));
+
       router.push("/")
     } catch (error) {
       console.error("Logout error:", error)
       // Even if the server call fails, clear local data
       setUser(null)
+      setIsAuthenticated(false)
       localStorage.removeItem("fitfaat_user")
+
+      // Dispatch a custom event to notify components about auth state change
+      window.dispatchEvent(new CustomEvent('auth_state_changed', { detail: { isAuthenticated: false } }));
+
       router.push("/")
     }
   }

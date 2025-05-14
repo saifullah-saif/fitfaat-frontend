@@ -115,17 +115,17 @@ const Toast = ({ message, type = 'success', onClose }) => {
             />
           </svg>
           <svg className="w-5 h-5 absolute" viewBox="0 0 24 24">
-          <path
-            d="M5 13l4 4L19 7"
-            fill="none"
-            stroke="#10b981"
+            <path
+              d="M5 13l4 4L19 7"
+              fill="none"
+              stroke="#10b981"
               strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeDasharray="30"
-            strokeDashoffset={30 - (checkmarkProgress * 30)}
-          />
-        </svg>
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeDasharray="30"
+              strokeDashoffset={30 - (checkmarkProgress * 30)}
+            />
+          </svg>
         </div>
       );
     } else if (type === 'warning') {
@@ -133,10 +133,10 @@ const Toast = ({ message, type = 'success', onClose }) => {
       return (
         <div className="relative w-6 h-6 flex items-center justify-center">
           <svg className="w-6 h-6 absolute animate-pulse" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="12" cy="12" r="10"></circle>
-          <line x1="12" y1="8" x2="12" y2="12"></line>
-          <line x1="12" y1="16" x2="12.01" y2="16"></line>
-        </svg>
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
         </div>
       );
     } else if (type === 'error') {
@@ -1286,11 +1286,11 @@ export function WorkoutPlanner() {
           case "difficulty_asc":
             const difficultyOrder = { "beginner": 1, "intermediate": 2, "advanced": 3 };
             return (difficultyOrder[a.difficulty_level?.toLowerCase()] || 0) -
-                   (difficultyOrder[b.difficulty_level?.toLowerCase()] || 0);
+              (difficultyOrder[b.difficulty_level?.toLowerCase()] || 0);
           case "difficulty_desc":
             const difficultyOrderDesc = { "beginner": 1, "intermediate": 2, "advanced": 3 };
             return (difficultyOrderDesc[b.difficulty_level?.toLowerCase()] || 0) -
-                   (difficultyOrderDesc[a.difficulty_level?.toLowerCase()] || 0);
+              (difficultyOrderDesc[a.difficulty_level?.toLowerCase()] || 0);
           case "muscle_group":
             return (a.muscle_group || "").localeCompare(b.muscle_group || "");
           case "equipment":
@@ -1908,7 +1908,7 @@ export function WorkoutPlanner() {
         const muscleGroupsList = Array.from(muscleGroups).slice(0, 2);
         planName = `${muscleGroupsList.join(" & ")} ${workoutPlan.goal_type}`;
       } else {
-        planName = `${workoutPlan.goal_type} Plan ${i+1}`;
+        planName = `${workoutPlan.goal_type} Plan ${i + 1}`;
       }
 
       plans.push({
@@ -2018,7 +2018,7 @@ export function WorkoutPlanner() {
         />
       ))}
       <div className="flex justify-between items-center">
-      <h1 className="text-3xl font-bold tracking-tight">Workout Planner</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Workout Planner</h1>
         <Button
           variant="outline"
           className="flex items-center gap-2"
@@ -2119,9 +2119,9 @@ export function WorkoutPlanner() {
         <Card className="overflow-hidden flex flex-col">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <Target className="h-7 w-7 mr-2 text-primary" />
-              <CardTitle className="text-2xl font-bold">My Goal</CardTitle>
+              <div className="flex items-center">
+                <Target className="h-7 w-7 mr-2 text-primary" />
+                <CardTitle className="text-2xl font-bold">My Goal</CardTitle>
               </div>
               <div className="flex items-center gap-3">
                 {/* Circular progress widget for active routine completion */}
@@ -2140,10 +2140,10 @@ export function WorkoutPlanner() {
 
                       // Get color based on user level
                       const color = userPoints.level <= 2 ? 'rgb(22, 163, 74)' : // Rookie - Green
-                                   userPoints.level <= 4 ? 'rgb(59, 130, 246)' : // Contender - Blue
-                                   userPoints.level <= 6 ? 'rgb(139, 92, 246)' : // Challenger - Purple
-                                   userPoints.level <= 9 ? 'rgb(245, 158, 11)' : // Veteran - Amber
-                                   'rgb(239, 68, 68)'; // Overachiever - Red
+                        userPoints.level <= 4 ? 'rgb(59, 130, 246)' : // Contender - Blue
+                          userPoints.level <= 6 ? 'rgb(139, 92, 246)' : // Challenger - Purple
+                            userPoints.level <= 9 ? 'rgb(245, 158, 11)' : // Veteran - Amber
+                              'rgb(239, 68, 68)'; // Overachiever - Red
 
                       return (
                         <div className="relative w-12 h-12 flex items-center justify-center mr-1 group">
@@ -2201,28 +2201,28 @@ export function WorkoutPlanner() {
                   style={{
                     backgroundColor:
                       userPoints.level <= 2 ? 'rgba(22, 163, 74, 0.15)' : // Rookie - Green
-                      userPoints.level <= 4 ? 'rgba(59, 130, 246, 0.15)' : // Contender - Blue
-                      userPoints.level <= 6 ? 'rgba(139, 92, 246, 0.15)' : // Challenger - Purple
-                      userPoints.level <= 9 ? 'rgba(245, 158, 11, 0.15)' : // Veteran - Amber
-                      'rgba(239, 68, 68, 0.15)', // Overachiever - Red
+                        userPoints.level <= 4 ? 'rgba(59, 130, 246, 0.15)' : // Contender - Blue
+                          userPoints.level <= 6 ? 'rgba(139, 92, 246, 0.15)' : // Challenger - Purple
+                            userPoints.level <= 9 ? 'rgba(245, 158, 11, 0.15)' : // Veteran - Amber
+                              'rgba(239, 68, 68, 0.15)', // Overachiever - Red
                     color:
                       userPoints.level <= 2 ? 'rgb(22, 163, 74)' : // Rookie - Green
-                      userPoints.level <= 4 ? 'rgb(59, 130, 246)' : // Contender - Blue
-                      userPoints.level <= 6 ? 'rgb(139, 92, 246)' : // Challenger - Purple
-                      userPoints.level <= 9 ? 'rgb(245, 158, 11)' : // Veteran - Amber
-                      'rgb(239, 68, 68)', // Overachiever - Red
+                        userPoints.level <= 4 ? 'rgb(59, 130, 246)' : // Contender - Blue
+                          userPoints.level <= 6 ? 'rgb(139, 92, 246)' : // Challenger - Purple
+                            userPoints.level <= 9 ? 'rgb(245, 158, 11)' : // Veteran - Amber
+                              'rgb(239, 68, 68)', // Overachiever - Red
                     borderLeft:
                       userPoints.level <= 2 ? '4px solid rgb(22, 163, 74)' : // Rookie - Green
-                      userPoints.level <= 4 ? '4px solid rgb(59, 130, 246)' : // Contender - Blue
-                      userPoints.level <= 6 ? '4px solid rgb(139, 92, 246)' : // Challenger - Purple
-                      userPoints.level <= 9 ? '4px solid rgb(245, 158, 11)' : // Veteran - Amber
-                      '4px solid rgb(239, 68, 68)', // Overachiever - Red
+                        userPoints.level <= 4 ? '4px solid rgb(59, 130, 246)' : // Contender - Blue
+                          userPoints.level <= 6 ? '4px solid rgb(139, 92, 246)' : // Challenger - Purple
+                            userPoints.level <= 9 ? '4px solid rgb(245, 158, 11)' : // Veteran - Amber
+                              '4px solid rgb(239, 68, 68)', // Overachiever - Red
                     boxShadow:
                       userPoints.level <= 2 ? '0 0 15px rgba(22, 163, 74, 0.3)' : // Rookie - Green
-                      userPoints.level <= 4 ? '0 0 15px rgba(59, 130, 246, 0.3)' : // Contender - Blue
-                      userPoints.level <= 6 ? '0 0 15px rgba(139, 92, 246, 0.3)' : // Challenger - Purple
-                      userPoints.level <= 9 ? '0 0 15px rgba(245, 158, 11, 0.3)' : // Veteran - Amber
-                      '0 0 15px rgba(239, 68, 68, 0.3)', // Overachiever - Red
+                        userPoints.level <= 4 ? '0 0 15px rgba(59, 130, 246, 0.3)' : // Contender - Blue
+                          userPoints.level <= 6 ? '0 0 15px rgba(139, 92, 246, 0.3)' : // Challenger - Purple
+                            userPoints.level <= 9 ? '0 0 15px rgba(245, 158, 11, 0.3)' : // Veteran - Amber
+                              '0 0 15px rgba(239, 68, 68, 0.3)', // Overachiever - Red
                   }}
                 >
                   {/* Shining loop animation */}
@@ -2238,16 +2238,16 @@ export function WorkoutPlanner() {
                       style={{
                         backgroundColor:
                           userPoints.level <= 2 ? 'rgba(22, 163, 74, 0.25)' : // Rookie - Green
-                          userPoints.level <= 4 ? 'rgba(59, 130, 246, 0.25)' : // Contender - Blue
-                          userPoints.level <= 6 ? 'rgba(139, 92, 246, 0.25)' : // Challenger - Purple
-                          userPoints.level <= 9 ? 'rgba(245, 158, 11, 0.25)' : // Veteran - Amber
-                          'rgba(255, 37, 37, 0.25)', // Overachiever - Red
+                            userPoints.level <= 4 ? 'rgba(59, 130, 246, 0.25)' : // Contender - Blue
+                              userPoints.level <= 6 ? 'rgba(139, 92, 246, 0.25)' : // Challenger - Purple
+                                userPoints.level <= 9 ? 'rgba(245, 158, 11, 0.25)' : // Veteran - Amber
+                                  'rgba(255, 37, 37, 0.25)', // Overachiever - Red
                         boxShadow:
                           userPoints.level <= 2 ? '0 0 8px rgba(22, 163, 74, 0.4)' : // Rookie - Green
-                          userPoints.level <= 4 ? '0 0 8px rgba(59, 130, 246, 0.4)' : // Contender - Blue
-                          userPoints.level <= 6 ? '0 0 8px rgba(139, 92, 246, 0.4)' : // Challenger - Purple
-                          userPoints.level <= 9 ? '0 0 8px rgba(245, 158, 11, 0.4)' : // Veteran - Amber
-                          '0 0 8px rgba(239, 68, 68, 0.4)', // Overachiever - Red
+                            userPoints.level <= 4 ? '0 0 8px rgba(59, 130, 246, 0.4)' : // Contender - Blue
+                              userPoints.level <= 6 ? '0 0 8px rgba(139, 92, 246, 0.4)' : // Challenger - Purple
+                                userPoints.level <= 9 ? '0 0 8px rgba(245, 158, 11, 0.4)' : // Veteran - Amber
+                                  '0 0 8px rgba(239, 68, 68, 0.4)', // Overachiever - Red
                       }}
                     >
                       {userPoints.rank}
@@ -2305,8 +2305,8 @@ export function WorkoutPlanner() {
                                 <span className="text-xs px-2 py-1 rounded-full transition-all duration-300 hover:scale-105"
                                   style={{
                                     backgroundColor: goal.difficulty_level === 'Beginner' ? 'rgba(22, 101, 52, 0.8)' :
-                                                  goal.difficulty_level === 'Intermediate' ? 'rgba(133, 77, 14, 0.8)' :
-                                                  goal.difficulty_level === 'Advanced' ? 'rgba(153, 27, 27, 0.8)' : 'rgba(55, 65, 81, 0.8)',
+                                      goal.difficulty_level === 'Intermediate' ? 'rgba(133, 77, 14, 0.8)' :
+                                        goal.difficulty_level === 'Advanced' ? 'rgba(153, 27, 27, 0.8)' : 'rgba(55, 65, 81, 0.8)',
                                     color: 'white'
                                   }}
                                 >
@@ -2325,27 +2325,27 @@ export function WorkoutPlanner() {
                       <Select
                         value={selectedGoal}
                         onValueChange={(value) => {
-              setSelectedGoal(value);
+                          setSelectedGoal(value);
                         }}
                       >
                         <SelectTrigger className="w-full animate-in fade-in slide-in-from-top-3 duration-300">
                           <SelectValue placeholder="Select a workout plan" />
-              </SelectTrigger>
-              <SelectContent>
-                {workoutGoals.map(goal => (
-                  <SelectItem key={goal.id} value={goal.id}>
-                    {goal.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {workoutGoals.map(goal => (
+                            <SelectItem key={goal.id} value={goal.id}>
+                              {goal.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
 
-            {/* Display selected goal details */}
-            {selectedGoal && (
+                      {/* Display selected goal details */}
+                      {selectedGoal && (
                         <div className="mt-4 p-4 bg-muted rounded-md border border-transparent hover:border-primary/20 relative overflow-hidden">
-                {workoutGoals.map(goal => {
-                  if (goal.id === selectedGoal) {
-                    return (
+                          {workoutGoals.map(goal => {
+                            if (goal.id === selectedGoal) {
+                              return (
                                 <div key={goal.id} className="space-y-3">
                                   <h2 className="text-xl font-bold text-primary relative inline-block">
                                     <span className="relative z-10">{goal.name}</span>
@@ -2357,30 +2357,30 @@ export function WorkoutPlanner() {
                                     <span className="text-xs px-2 py-1 rounded-full"
                                       style={{
                                         backgroundColor: goal.difficulty_level === 'Beginner' ? 'rgba(22, 101, 52, 0.8)' :
-                                                      goal.difficulty_level === 'Intermediate' ? 'rgba(133, 77, 14, 0.8)' :
-                                                      goal.difficulty_level === 'Advanced' ? 'rgba(153, 27, 27, 0.8)' : 'rgba(55, 65, 81, 0.8)',
+                                          goal.difficulty_level === 'Intermediate' ? 'rgba(133, 77, 14, 0.8)' :
+                                            goal.difficulty_level === 'Advanced' ? 'rgba(153, 27, 27, 0.8)' : 'rgba(55, 65, 81, 0.8)',
                                         color: 'white'
                                       }}
                                     >
                                       {goal.difficulty_level}
                                     </span>
                                   </div>
-                      </div>
-                    );
-                  }
-                  return null;
-                })}
+                                </div>
+                              );
+                            }
+                            return null;
+                          })}
 
                           <div className="mt-6 flex justify-end">
                             {changingGoal && (
-              <Button
-                variant="outline"
+                              <Button
+                                variant="outline"
                                 size="sm"
                                 onClick={() => setChangingGoal(false)}
                                 className="mr-2 hover:bg-muted/80"
-              >
+                              >
                                 <span className="relative z-10">Cancel</span>
-              </Button>
+                              </Button>
                             )}
                             <Button
                               onClick={() => saveWorkoutGoal(selectedGoal)}
@@ -2417,7 +2417,7 @@ export function WorkoutPlanner() {
                           <RefreshCw className="h-4 w-4" />
                         )}
                       </Button>
-                      </div>
+                    </div>
 
                     {/* Carousel Controls */}
                     <div className="relative">
@@ -2425,9 +2425,9 @@ export function WorkoutPlanner() {
                         className="absolute left-0 top-1/2 -translate-y-1/2 z-10"
                         onClick={() => scrollRecommendations('left')}
                       >
-                      <Button
+                        <Button
                           variant="ghost"
-                        size="sm"
+                          size="sm"
                           className="h-8 w-8 p-0 rounded-full bg-background/70 backdrop-blur-sm hover:bg-background/90 shadow-md"
                         >
                           <ChevronLeft className="h-5 w-5" />
@@ -2439,13 +2439,13 @@ export function WorkoutPlanner() {
                         onClick={() => scrollRecommendations('right')}
                       >
                         <Button
-                        variant="ghost"
+                          variant="ghost"
                           size="sm"
                           className="h-8 w-8 p-0 rounded-full bg-background/70 backdrop-blur-sm hover:bg-background/90 shadow-md"
-                      >
+                        >
                           <ChevronRight className="h-5 w-5" />
-                      </Button>
-                    </div>
+                        </Button>
+                      </div>
 
                       {/* Scrollable Carousel */}
                       <div
@@ -2513,7 +2513,7 @@ export function WorkoutPlanner() {
                                     </li>
                                   ))}
                                 </ul>
-                </div>
+                              </div>
 
                               <Button
                                 size="sm"
@@ -2524,7 +2524,7 @@ export function WorkoutPlanner() {
                                 <Plus className="h-4 w-4 mr-1" />
                                 Add Plan
                               </Button>
-                </div>
+                            </div>
                           ))
                         )}
                       </div>
@@ -2541,8 +2541,8 @@ export function WorkoutPlanner() {
                         100% { transform: translateX(400%); }
                       }
                     `}</style>
-            </div>
-          )}
+                  </div>
+                )}
               </>
             )}
           </CardContent>
@@ -2746,175 +2746,174 @@ export function WorkoutPlanner() {
                 ) : (
                   <div className="space-y-3">
                     {routines.map((routine, index) => (
-                  <div
-                    key={routine.id}
-                    className="p-2 border rounded-md transition-all duration-300 hover:shadow-md animate-in fade-in slide-in-from-right-5"
-                    style={{ animationDelay: `${index * 100}ms` }}
-                  >
-                    <div className="flex justify-between items-center">
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm transition-all duration-300 hover:translate-x-1 truncate pr-2">
-                          {routine.exercise.name}
-                          <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full transition-all duration-300 ${routine.is_completed ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'}`}>
-                            {routine.is_completed ? 'Completed' : 'Pending'}
-                          </span>
-                          {routine.isConfirmed && !routine.is_completed && (
-                            <span className="ml-1.5 text-xs px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-800 animate-pulse">
-                              Ready
-                            </span>
-                          )}
-                        </p>
-                        <p className="text-xs text-muted-foreground transition-all duration-300 hover:translate-x-1 truncate">
-                          {routine.exercise.difficulty_level} • {routine.exercise.muscle_group}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-1 flex-shrink-0">
-                        <Button
-                          size="sm"
-                          variant={routine.isConfirmed ? "ghost" : "outline"}
-                          onClick={async () => {
-                            if (!routine.is_completed && routine.isConfirmed) {
-                              // Only proceed if routine is confirmed
-                              await completeExerciseAndAddToLogs(routine.id);
-                            } else if (!routine.isConfirmed) {
-                              addToast("Please confirm routine settings before marking as completed.", 'warning');
-                            }
-                          }}
-                          className={`${routine.isConfirmed ? 'text-green-600 hover:text-green-800 hover:bg-green-50' : 'text-gray-400 hover:text-gray-600'} transition-all duration-300 hover:scale-110 h-7 w-7 p-0`}
-                          disabled={routine.is_completed || completingRoutine === routine.id}
-                          title={routine.isConfirmed ? "Complete and remove" : "Confirm settings first"}
-                        >
-                          {completingRoutine === routine.id ? (
-                            <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-t-transparent border-green-600"></div>
-                          ) : (
-                            <Check className="h-3.5 w-3.5 transition-transform duration-300 hover:scale-125" />
-                          )}
-                          <span className="sr-only">Complete and remove</span>
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => removeExerciseFromRoutine(routine.id)}
-                          className="text-red-600 hover:text-red-800 hover:bg-red-50 transition-all duration-300 hover:scale-110 h-7 w-7 p-0"
-                          disabled={removingRoutine === routine.id}
-                        >
-                          {removingRoutine === routine.id ? (
-                            <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-t-transparent border-red-600"></div>
-                          ) : (
-                            <X className="h-3.5 w-3.5 transition-transform duration-300 hover:rotate-90" />
-                          )}
-                        </Button>
-                      </div>
-                    </div>
-
-                    {!routine.isConfirmed ? (
-                      <div className="flex items-center gap-2 mt-2">
-                        <div className="flex-1 flex items-end gap-1">
-                          <div className="w-1/3">
-                            <label className="text-xs font-medium block mb-1">Sets</label>
-                          <Select
-                            value={routine.sets.toString()}
-                            onValueChange={(value) => updateRoutine(routine.id, 'sets', parseInt(value))}
-                            disabled={routine.is_completed}
-                          >
-                              <SelectTrigger className="h-7 text-xs py-0 px-2">
-                              <SelectValue placeholder="Sets" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {[1, 2, 3, 4, 5].map(num => (
-                                <SelectItem key={num} value={num.toString()}>{num}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                      <div
+                        key={routine.id}
+                        className="p-2 border rounded-md transition-all duration-300 hover:shadow-md animate-in fade-in slide-in-from-right-5"
+                        style={{ animationDelay: `${index * 100}ms` }}
+                      >
+                        <div className="flex justify-between items-center">
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-sm transition-all duration-300 hover:translate-x-1 truncate pr-2">
+                              {routine.exercise.name}
+                              <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full transition-all duration-300 ${routine.is_completed ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'}`}>
+                                {routine.is_completed ? 'Completed' : 'Pending'}
+                              </span>
+                              {routine.isConfirmed && !routine.is_completed && (
+                                <span className="ml-1.5 text-xs px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-800 animate-pulse">
+                                  Ready
+                                </span>
+                              )}
+                            </p>
+                            <p className="text-xs text-muted-foreground transition-all duration-300 hover:translate-x-1 truncate">
+                              {routine.exercise.difficulty_level} • {routine.exercise.muscle_group}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-1 flex-shrink-0">
+                            <Button
+                              size="sm"
+                              variant={routine.isConfirmed ? "ghost" : "outline"}
+                              onClick={async () => {
+                                if (!routine.is_completed && routine.isConfirmed) {
+                                  // Only proceed if routine is confirmed
+                                  await completeExerciseAndAddToLogs(routine.id);
+                                } else if (!routine.isConfirmed) {
+                                  addToast("Please confirm routine settings before marking as completed.", 'warning');
+                                }
+                              }}
+                              className={`${routine.isConfirmed ? 'text-green-600 hover:text-green-800 hover:bg-green-50' : 'text-gray-400 hover:text-gray-600'} transition-all duration-300 hover:scale-110 h-7 w-7 p-0`}
+                              disabled={routine.is_completed || completingRoutine === routine.id}
+                              title={routine.isConfirmed ? "Complete and remove" : "Confirm settings first"}
+                            >
+                              {completingRoutine === routine.id ? (
+                                <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-t-transparent border-green-600"></div>
+                              ) : (
+                                <Check className="h-3.5 w-3.5 transition-transform duration-300 hover:scale-125" />
+                              )}
+                              <span className="sr-only">Complete and remove</span>
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => removeExerciseFromRoutine(routine.id)}
+                              className="text-red-600 hover:text-red-800 hover:bg-red-50 transition-all duration-300 hover:scale-110 h-7 w-7 p-0"
+                              disabled={removingRoutine === routine.id}
+                            >
+                              {removingRoutine === routine.id ? (
+                                <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-t-transparent border-red-600"></div>
+                              ) : (
+                                <X className="h-3.5 w-3.5 transition-transform duration-300 hover:rotate-90" />
+                              )}
+                            </Button>
+                          </div>
                         </div>
 
-                          <div className="w-1/3">
-                            <label className="text-xs font-medium block mb-1">Reps</label>
-                          <Select
-                            value={routine.reps}
-                            onValueChange={(value) => updateRoutine(routine.id, 'reps', value)}
-                            disabled={routine.is_completed}
-                          >
-                              <SelectTrigger className="h-7 text-xs py-0 px-2">
-                              <SelectValue placeholder="Reps" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="5-8">5-8</SelectItem>
-                              <SelectItem value="8-12">8-12</SelectItem>
-                              <SelectItem value="10-15">10-15</SelectItem>
-                              <SelectItem value="15-20">15-20</SelectItem>
-                              <SelectItem value="20+">20+</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
+                        {!routine.isConfirmed ? (
+                          <div className="flex items-center gap-2 mt-2">
+                            <div className="flex-1 flex items-end gap-1">
+                              <div className="w-1/3">
+                                <label className="text-xs font-medium block mb-1">Sets</label>
+                                <Select
+                                  value={routine.sets.toString()}
+                                  onValueChange={(value) => updateRoutine(routine.id, 'sets', parseInt(value))}
+                                  disabled={routine.is_completed}
+                                >
+                                  <SelectTrigger className="h-7 text-xs py-0 px-2">
+                                    <SelectValue placeholder="Sets" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {[1, 2, 3, 4, 5].map(num => (
+                                      <SelectItem key={num} value={num.toString()}>{num}</SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
 
-                          <div className="w-1/3">
-                            <label className="text-xs font-medium block mb-1">Duration</label>
-                          <Select
-                            value={routine.duration}
-                            onValueChange={(value) => updateRoutine(routine.id, 'duration', value)}
-                            disabled={routine.is_completed}
-                          >
-                              <SelectTrigger className="h-7 text-xs py-0 px-2">
-                              <SelectValue placeholder="Duration" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="20 sec">20 sec</SelectItem>
-                              <SelectItem value="30 sec">30 sec</SelectItem>
-                              <SelectItem value="45 sec">45 sec</SelectItem>
-                              <SelectItem value="60 sec">60 sec</SelectItem>
-                              <SelectItem value="90 sec">90 sec</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        </div>
+                              <div className="w-1/3">
+                                <label className="text-xs font-medium block mb-1">Reps</label>
+                                <Select
+                                  value={routine.reps}
+                                  onValueChange={(value) => updateRoutine(routine.id, 'reps', value)}
+                                  disabled={routine.is_completed}
+                                >
+                                  <SelectTrigger className="h-7 text-xs py-0 px-2">
+                                    <SelectValue placeholder="Reps" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="5-8">5-8</SelectItem>
+                                    <SelectItem value="8-12">8-12</SelectItem>
+                                    <SelectItem value="10-15">10-15</SelectItem>
+                                    <SelectItem value="15-20">15-20</SelectItem>
+                                    <SelectItem value="20+">20+</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
 
-                        <Button
-                          size="sm"
-                          onClick={() => confirmRoutineSettings(routine.id)}
-                          className="bg-primary text-black hover:bg-primary/90 transition-all duration-300 h-7 px-3 shadow-md hover:shadow-lg hover:shadow-primary/20"
-                        >
-                          <Save className="h-3.5 w-3.5 mr-1" />
-                          <span className="text-xs text-black">Confirm</span>
-                        </Button>
+                              <div className="w-1/3">
+                                <label className="text-xs font-medium block mb-1">Duration</label>
+                                <Select
+                                  value={routine.duration}
+                                  onValueChange={(value) => updateRoutine(routine.id, 'duration', value)}
+                                  disabled={routine.is_completed}
+                                >
+                                  <SelectTrigger className="h-7 text-xs py-0 px-2">
+                                    <SelectValue placeholder="Duration" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="20 sec">20 sec</SelectItem>
+                                    <SelectItem value="30 sec">30 sec</SelectItem>
+                                    <SelectItem value="45 sec">45 sec</SelectItem>
+                                    <SelectItem value="60 sec">60 sec</SelectItem>
+                                    <SelectItem value="90 sec">90 sec</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            </div>
+
+                            <Button
+                              size="sm"
+                              onClick={() => confirmRoutineSettings(routine.id)}
+                              className="bg-primary text-black hover:bg-primary/90 transition-all duration-300 h-7 px-3 shadow-md hover:shadow-lg hover:shadow-primary/20"
+                            >
+                              <Save className="h-3.5 w-3.5 mr-1" />
+                              <span className="text-xs text-black">Confirm</span>
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="mt-2 text-xs">
+                            <div className="flex items-center gap-2">
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-muted">
+                                <span className="font-semibold mr-1">Sets:</span> {routine.sets}
+                              </span>
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-muted">
+                                <span className="font-semibold mr-1">Reps:</span> {routine.reps}
+                              </span>
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-muted">
+                                <span className="font-semibold mr-1">Duration:</span> {routine.duration}
+                              </span>
+                            </div>
+                          </div>
+                        )}
                       </div>
-                    ) : (
-                      <div className="mt-2 text-xs">
-                        <div className="flex items-center gap-2">
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-muted">
-                            <span className="font-semibold mr-1">Sets:</span> {routine.sets}
-                          </span>
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-muted">
-                            <span className="font-semibold mr-1">Reps:</span> {routine.reps}
-                          </span>
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-muted">
-                            <span className="font-semibold mr-1">Duration:</span> {routine.duration}
-                          </span>
-                        </div>
-                      </div>
-                    )}
+                    ))}
                   </div>
-                ))}
-              </div>
-            )}
+                )}
               </div>
             </div>
           </CardContent>
           <div className="px-6 py-3 bg-muted flex justify-between mt-auto">
             <div className="flex gap-2">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={saveWorkoutPlan}
-              disabled={routines.length === 0}
-              className={`bg-primary/10 hover:bg-primary/20 text-primary hover:text-primary border-primary/20 hover:border-primary/40 ${
-                routines.length === 0 ? 'opacity-50 cursor-not-allowed' : ''
-              }`}
-              title={routines.length === 0 ? "Add exercises to save a routine" : "Save your routine"}
-            >
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={saveWorkoutPlan}
+                disabled={routines.length === 0}
+                className={`bg-primary/10 hover:bg-primary/20 text-primary hover:text-primary border-primary/20 hover:border-primary/40 ${routines.length === 0 ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
+                title={routines.length === 0 ? "Add exercises to save a routine" : "Save your routine"}
+              >
                 <Save className="h-4 w-4 mr-1" />
-              Save Routine
-            </Button>
+                Save Routine
+              </Button>
               <Button
                 size="sm"
                 variant="outline"
@@ -3143,7 +3142,7 @@ export function WorkoutPlanner() {
                                 className="w-full h-full object-cover transition-all duration-500 group-hover:scale-110"
                               />
                               <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                          </div>
+                            </div>
                           ) : (
                             <div className="h-full flex items-center justify-center bg-muted">
                               <Dumbbell className="h-10 w-10 text-muted-foreground transition-all duration-300 group-hover:scale-110" />
@@ -3152,8 +3151,8 @@ export function WorkoutPlanner() {
                           <div className="absolute top-2 left-2 rounded-full px-2 py-1 text-xs transition-transform duration-300 group-hover:scale-110 bg-black/70 text-white"
                             style={{
                               backgroundColor: exercise.difficulty_level === 'Beginner' ? 'rgba(22, 101, 52, 0.8)' :
-                                            exercise.difficulty_level === 'Intermediate' ? 'rgba(133, 77, 14, 0.8)' :
-                                            exercise.difficulty_level === 'Advanced' ? 'rgba(153, 27, 27, 0.8)' : 'rgba(55, 65, 81, 0.8)',
+                                exercise.difficulty_level === 'Intermediate' ? 'rgba(133, 77, 14, 0.8)' :
+                                  exercise.difficulty_level === 'Advanced' ? 'rgba(153, 27, 27, 0.8)' : 'rgba(55, 65, 81, 0.8)',
                             }}
                           >
                             {exercise.difficulty_level || "Unknown"}
@@ -3168,31 +3167,31 @@ export function WorkoutPlanner() {
                               <CardDescription className="text-xs mt-1 transition-all duration-300 group-hover:translate-x-1">
                                 Category: {exercise.category_name || "Uncategorized"}
                               </CardDescription>
-                        </div>
-                      </CardHeader>
+                            </div>
+                          </CardHeader>
                           <CardContent className="pb-3 px-3">
-                        <div className="space-y-2">
-                          {exercise.description && (
+                            <div className="space-y-2">
+                              {exercise.description && (
                                 <p className="text-xs line-clamp-2 h-10 transition-all duration-300 group-hover:translate-y-0.5">{exercise.description}</p>
-                          )}
+                              )}
 
-                          {exercise.muscle_group && (
+                              {exercise.muscle_group && (
                                 <div className="flex flex-wrap gap-1 mt-2 h-6">
                                   {exercise.muscle_group.split(',').slice(0, 2).map((muscle, idx) => (
                                     <span
                                       key={idx}
                                       className="bg-muted text-xs px-2 py-0.5 rounded-full transition-all duration-300 hover:scale-105"
                                     >
-                                  {muscle.trim()}
-                                </span>
-                              ))}
+                                      {muscle.trim()}
+                                    </span>
+                                  ))}
                                   {exercise.muscle_group.split(',').length > 2 && (
                                     <span className="text-xs text-muted-foreground">+{exercise.muscle_group.split(',').length - 2} more</span>
                                   )}
+                                </div>
+                              )}
                             </div>
-                          )}
-                        </div>
-                      </CardContent>
+                          </CardContent>
                         </div>
                       </div>
                       <div className="px-6 py-2 bg-muted flex justify-between gap-2">
@@ -3204,7 +3203,7 @@ export function WorkoutPlanner() {
                         >
                           <span className="relative z-10 flex items-center">
                             <Plus className="h-4 w-4 mr-1 transition-transform duration-300 group-hover:rotate-90" />
-                          Add
+                            Add
                           </span>
                           <span className="absolute inset-0 bg-primary-dark transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-300"></span>
                         </Button>
@@ -3263,19 +3262,19 @@ export function WorkoutPlanner() {
 
                 <div className="flex-1">
                   <div className="flex items-center mb-2">
-                <span className="text-sm font-medium mr-2">Difficulty:</span>
+                    <span className="text-sm font-medium mr-2">Difficulty:</span>
                     <span className="px-2 py-1 rounded-full text-xs transition-transform duration-300 hover:scale-105"
-                  style={{
-                    backgroundColor: selectedExercise.difficulty_level === 'Beginner' ? '#dcfce7' :
-                                    selectedExercise.difficulty_level === 'Intermediate' ? '#fef9c3' :
-                                    selectedExercise.difficulty_level === 'Advanced' ? '#fee2e2' : '#f3f4f6',
-                    color: selectedExercise.difficulty_level === 'Beginner' ? '#166534' :
+                      style={{
+                        backgroundColor: selectedExercise.difficulty_level === 'Beginner' ? '#dcfce7' :
+                          selectedExercise.difficulty_level === 'Intermediate' ? '#fef9c3' :
+                            selectedExercise.difficulty_level === 'Advanced' ? '#fee2e2' : '#f3f4f6',
+                        color: selectedExercise.difficulty_level === 'Beginner' ? '#166534' :
                           selectedExercise.difficulty_level === 'Intermediate' ? '#854d0e' :
-                          selectedExercise.difficulty_level === 'Advanced' ? '#991b1b' : '#374151'
-                  }}
-                >
-                  {selectedExercise.difficulty_level || "Unknown"}
-                </span>
+                            selectedExercise.difficulty_level === 'Advanced' ? '#991b1b' : '#374151'
+                      }}
+                    >
+                      {selectedExercise.difficulty_level || "Unknown"}
+                    </span>
                   </div>
 
                   {selectedExercise.equipment_needed && (
@@ -3392,16 +3391,16 @@ export function WorkoutPlanner() {
                 style={{
                   backgroundColor:
                     userPoints.level <= 2 ? 'rgba(22, 163, 74, 0.15)' : // Rookie - Green
-                    userPoints.level <= 4 ? 'rgba(59, 130, 246, 0.15)' : // Contender - Blue
-                    userPoints.level <= 6 ? 'rgba(139, 92, 246, 0.15)' : // Challenger - Purple
-                    userPoints.level <= 9 ? 'rgba(245, 158, 11, 0.15)' : // Veteran - Amber
-                    'rgba(239, 68, 68, 0.15)', // Overachiever - Red
+                      userPoints.level <= 4 ? 'rgba(59, 130, 246, 0.15)' : // Contender - Blue
+                        userPoints.level <= 6 ? 'rgba(139, 92, 246, 0.15)' : // Challenger - Purple
+                          userPoints.level <= 9 ? 'rgba(245, 158, 11, 0.15)' : // Veteran - Amber
+                            'rgba(239, 68, 68, 0.15)', // Overachiever - Red
                   color:
                     userPoints.level <= 2 ? 'rgb(22, 163, 74)' : // Rookie - Green
-                    userPoints.level <= 4 ? 'rgb(59, 130, 246)' : // Contender - Blue
-                    userPoints.level <= 6 ? 'rgb(139, 92, 246)' : // Challenger - Purple
-                    userPoints.level <= 9 ? 'rgb(245, 158, 11)' : // Veteran - Amber
-                    'rgb(239, 68, 68)', // Overachiever - Red
+                      userPoints.level <= 4 ? 'rgb(59, 130, 246)' : // Contender - Blue
+                        userPoints.level <= 6 ? 'rgb(139, 92, 246)' : // Challenger - Purple
+                          userPoints.level <= 9 ? 'rgb(245, 158, 11)' : // Veteran - Amber
+                            'rgb(239, 68, 68)', // Overachiever - Red
                 }}
               >
                 <span className="font-bold">Level {userPoints.level}</span>
@@ -3458,7 +3457,7 @@ export function WorkoutPlanner() {
                                   <div className="flex items-center gap-2">
                                     <div className="flex items-center bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full transition-all duration-300 hover:scale-105">
                                       <Check className="h-3 w-3 mr-1" />
-                                    Completed
+                                      Completed
                                     </div>
                                     {log.calories_burned > 0 && (
                                       <div className="flex items-center bg-primary/10 text-primary text-xs px-2 py-1 rounded-full transition-all duration-300 hover:scale-105">
@@ -3808,11 +3807,10 @@ export function WorkoutPlanner() {
                 {userRoutines.map((routine) => (
                   <div
                     key={routine.goal_id}
-                    className={`border rounded-lg p-4 transition-all duration-300 hover:shadow-md ${
-                      routine.status === 'Active'
+                    className={`border rounded-lg p-4 transition-all duration-300 hover:shadow-md ${routine.status === 'Active'
                         ? 'border-primary/50 bg-primary/5'
                         : 'hover:border-primary/20'
-                    }`}
+                      }`}
                   >
                     <div className="flex justify-between items-start">
                       <div>

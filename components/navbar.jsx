@@ -200,10 +200,40 @@ export function Navbar() {
     // Check theme
     const savedTheme = localStorage.getItem("theme") || "dark"
     setTheme(savedTheme)
-  }, [])
+
+    // Add event listener for auth state changes
+    const handleAuthChange = (event) => {
+      console.log("Auth state changed:", event.detail.isAuthenticated);
+      // Force a re-render of the navbar when auth state changes
+      if (event.detail.isAuthenticated !== isAuthenticated) {
+        // This will ensure the navbar updates immediately
+        setMounted(false);
+        setTimeout(() => setMounted(true), 0);
+      }
+    };
+
+    window.addEventListener('auth_state_changed', handleAuthChange);
+
+    // Clean up event listener
+    return () => {
+      window.removeEventListener('auth_state_changed', handleAuthChange);
+    };
+  }, [isAuthenticated])
 
   // Fetch cart and orders when component mounts or when authentication changes
   useEffect(() => {
+    // Check localStorage directly to ensure we have the latest auth state
+    const storedUser = localStorage.getItem("fitfaat_user");
+    const currentlyAuthenticated = !!storedUser;
+
+    // If there's a mismatch between our state and localStorage, update our state
+    if (currentlyAuthenticated !== isAuthenticated) {
+      console.log("Auth state mismatch detected, updating navbar");
+      // Force a re-render with the correct auth state
+      setMounted(false);
+      setTimeout(() => setMounted(true), 0);
+    }
+
     if (isAuthenticated) {
       fetchCart();
       fetchUserOrders();
@@ -283,6 +313,27 @@ export function Navbar() {
       console.error("Error adding item to cart:", err);
     }
   };
+
+  // Force a check of authentication status on each render
+  useEffect(() => {
+    // This will run on every render to ensure we have the latest auth state
+    const checkCurrentAuthState = () => {
+      const storedUser = localStorage.getItem("fitfaat_user");
+      const currentlyAuthenticated = !!storedUser;
+
+      // If there's a mismatch between our state and localStorage
+      if (currentlyAuthenticated !== isAuthenticated) {
+        console.log("Auth state mismatch detected on render");
+        // Force a re-render with the correct auth state
+        setMounted(false);
+        setTimeout(() => setMounted(true), 0);
+      }
+    };
+
+    if (mounted) {
+      checkCurrentAuthState();
+    }
+  }, [mounted, isAuthenticated]);
 
   // Only wait for client-side mounting to avoid hydration issues
   if (!mounted) return null

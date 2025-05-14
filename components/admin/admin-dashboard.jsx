@@ -13,16 +13,13 @@ import { Reports } from "@/components/admin/reports";
 import { Shield, Users, Activity, Package, ShoppingCart, UsersIcon, MessageSquare } from "lucide-react";
 import { useAuth } from "@/components/auth-provider";
 
-export default function AdminDashboard() {
-  const { user } = useAuth();
-  const router = useRouter();
-  const [activeTab, setActiveTab] = useState("users");
-  const [users, setUsers] = useState([]);
-  const [orders, setOrders] = useState([]);
-  const [loading, setLoading] = useState(true);
+export function AdminDashboard() {
+  const { user } = useAuth()
+  const router = useRouter()
+  const [activeTab, setActiveTab] = useState("users")
 
-  // Mock check for admin status
-  const isAdmin = user?.role === "admin" || true;
+  // Check for admin status based on user role from token
+  const isAdmin = user?.role === "Admin"
 
   if (!isAdmin) {
     router.push("/");
@@ -44,10 +41,7 @@ export default function AdminDashboard() {
             <Users className="h-4 w-4" />
             <span>Users</span>
           </TabsTrigger>
-          <TabsTrigger value="progress" className="flex items-center gap-2">
-            <Activity className="h-4 w-4" />
-            <span>Progress</span>
-          </TabsTrigger>
+          
           <TabsTrigger value="inventory" className="flex items-center gap-2">
             <Package className="h-4 w-4" />
             <span>Inventory</span>
@@ -65,7 +59,7 @@ export default function AdminDashboard() {
             <span>Content</span>
           </TabsTrigger>
           <TabsTrigger value="reports">Reports</TabsTrigger>
-          <TabsTrigger value="settings">Settings</TabsTrigger>
+          
         </TabsList>
 
         <TabsContent value="users" className="space-y-6">
@@ -80,17 +74,6 @@ export default function AdminDashboard() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="progress" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Progress Monitoring</CardTitle>
-              <CardDescription>Monitor user progress, achievements, and fitness goals</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ProgressMonitoring />
-            </CardContent>
-          </Card>
-        </TabsContent>
 
         <TabsContent value="inventory" className="space-y-6">
           <Card>
@@ -152,19 +135,7 @@ export default function AdminDashboard() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="settings" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Admin Settings</CardTitle>
-              <CardDescription>Configure admin dashboard settings and preferences</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="h-[400px] flex items-center justify-center border rounded-md">
-                <p className="text-muted-foreground">Settings functionality coming soon</p>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+        
       </Tabs>
     </div>
   )

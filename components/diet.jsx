@@ -1,15 +1,18 @@
 "use client";
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 //import "./Diet.css"
 export const Diet=()=> {
- 
+  const router = useRouter();
+
   const [calorieInput, setCalorieInput] = useState('');
   const [dietType, setDietType] = useState('veg');
   const [dietPlan, setDietPlan] = useState(null);
   const [alternatives, setAlternatives] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
 
+  // Available calorie ranges for diet planss
   const calorieRanges = [
     { min: 1000, max: 1300, label: "1000-1300" },
     { min: 1300, max: 1500, label: "1300-1500" },
@@ -17,13 +20,6 @@ export const Diet=()=> {
     { min: 1800, max: 2100, label: "1800-2100" },
     { min: 2100, max: 2400, label: "2100-2400" }
   ];
-
-  const getCalorieRange = (cal) => {
-    for (let range of calorieRanges) {
-      if (cal >= range.min && cal < range.max) return range.label;
-    }
-    return null;
-  };
 
   const dietData = {
     '1000-1300': {
@@ -100,7 +96,6 @@ export const Diet=()=> {
           { breakfast: "Paratha", lunch: "Kebabs", dinner: "Ice cream" }
         ]
       },
-    
       '1500-1800': {
   veg: [
     { breakfast: "Peanut butter toast", lunch: "Rajma chawal", dinner: "Vegetable biryani" },
@@ -226,7 +221,6 @@ export const Diet=()=> {
   ]
 },
 
-    
       '2100-2400': {
         veg: [
           { breakfast: "Vegetable oats", lunch: "Vegetable pulao", dinner: "Dal makhani with rice" },
@@ -275,7 +269,6 @@ export const Diet=()=> {
           { breakfast: "Paratha roll", lunch: "Steak", dinner: "Fish and chips" }
         ]
       },
-    
       '2700-3000': {
         veg: [
           { breakfast: "Paratha with curd", lunch: "Vegetable pulao and curry", dinner: "Paneer tikka and naan" },
@@ -313,9 +306,9 @@ export const Diet=()=> {
           { breakfast: "French toast", lunch: "BBQ ribs", dinner: "Loaded pizza" }
         ]
       }
-    
-    
-    
+
+
+
     // You can add similar structures for other calorie ranges (1300-1500, 1500-1800, etc.)
   };
 
@@ -345,11 +338,12 @@ export const Diet=()=> {
   return (
     <div className="diet-page">
       <div className="top-nav">
-        <button className="back-button" onClick={() => navigate('/')}>Back</button>
+        <button className="back-button" onClick={() => router.push('/dashboard')}>Back to Dashboard</button>
       </div>
 
       <div className="diet-content">
         <h1>Find Your Perfect Diet Plan</h1>
+        <p className="description">Select your daily calorie range and preferred diet type to get personalized meal recommendations.</p>
 
         <form className="calorie-form" onSubmit={handleSubmit}>
           <div className="form-group">
@@ -392,21 +386,30 @@ export const Diet=()=> {
           <>
             <div className="diet-plan-details">
               <div className="meal">
+                <div className="meal-icon">🍳</div>
                 <h3>Breakfast</h3>
                 <p>{dietPlan.breakfast}</p>
               </div>
               <div className="meal">
+                <div className="meal-icon">🥗</div>
                 <h3>Lunch</h3>
                 <p>{dietPlan.lunch}</p>
               </div>
               <div className="meal">
+                <div className="meal-icon">🍽️</div>
                 <h3>Dinner</h3>
                 <p>{dietPlan.dinner}</p>
               </div>
             </div>
 
             <div className="alternative-buttons">
-              <button onClick={handleAlternative}>Show Another Alternative</button>
+              <button onClick={handleAlternative}>
+                <span className="button-icon">🔄</span>
+                Show Another Alternative
+              </button>
+              <div className="meal-counter">
+                Option {currentIndex + 1} of {alternatives.length}
+              </div>
             </div>
           </>
         )}
@@ -414,115 +417,256 @@ export const Diet=()=> {
 
       <style jsx>{`
         .diet-page {
-          font-family: Arial, sans-serif;
+          font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
           display: flex;
           flex-direction: column;
           align-items: center;
           justify-content: flex-start;
-          height: 100vh;
+          min-height: 100vh;
+          background-color: #000000;
+          color: #e0e0e0;
         }
 
         .top-nav {
           width: 100%;
-          padding: 10px 20px;
+          padding: 16px 24px;
           display: flex;
           justify-content: flex-start;
+          background-color: #0a0a0a;
+          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+          border-bottom: 1px solid #222;
         }
 
         .back-button {
-          background-color: #FF6F61;
+          background-color: #3a86ff;
           color: white;
           padding: 10px 20px;
           border: none;
           cursor: pointer;
           font-size: 16px;
-          border-radius: 5px;
+          border-radius: 8px;
+          font-weight: 500;
+          transition: all 0.2s ease;
+        }
+
+        .back-button:hover {
+          background-color: #2563eb;
+          transform: translateY(-2px);
+          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
         }
 
         .diet-content {
           width: 100%;
-          max-width: 600px;
-          padding: 20px;
+          max-width: 700px;
+          padding: 32px;
           text-align: center;
-          background-color: #f9f9f9;
-          border-radius: 8px;
-          box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-          margin-top: 20px;
+          background-color: #1e1e1e;
+          border-radius: 16px;
+          box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+          margin: 32px auto;
+          border: 1px solid #333;
         }
 
         .diet-content h1 {
-          color: #333;
+          color: #ffffff;
+          font-size: 2.2rem;
+          font-weight: 700;
+          margin-bottom: 16px;
+          background: linear-gradient(90deg, #3a86ff, #ff0080);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .description {
+          color: #a0a0a0;
+          font-size: 1.1rem;
+          line-height: 1.6;
+          margin-bottom: 32px;
+          max-width: 600px;
+          margin-left: auto;
+          margin-right: auto;
         }
 
         .calorie-form {
           display: flex;
           flex-direction: column;
-          gap: 15px;
+          gap: 20px;
+          margin-bottom: 32px;
         }
 
         .form-group {
           display: flex;
           flex-direction: column;
-          gap: 5px;
+          gap: 8px;
           align-items: flex-start;
+          width: 100%;
         }
 
         label {
-          font-size: 14px;
-          color: #555;
+          font-size: 16px;
+          color: #a0a0a0;
+          font-weight: 500;
+          margin-left: 4px;
         }
 
         select {
-          padding: 10px;
+          width: 100%;
+          padding: 14px 16px;
           font-size: 16px;
-          border: 1px solid #ddd;
-          border-radius: 5px;
+          background-color: #2a2a2a;
+          color: #ffffff;
+          border: 1px solid #444;
+          border-radius: 8px;
+          appearance: none;
+          background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a0a0a0' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+          background-repeat: no-repeat;
+          background-position: right 16px center;
+          background-size: 16px;
+          transition: all 0.2s ease;
+        }
+
+        select:focus {
+          border-color: #3a86ff;
+          outline: none;
+          box-shadow: 0 0 0 3px rgba(58, 134, 255, 0.2);
         }
 
         button {
-          padding: 12px 20px;
-          background-color: #FF6F61;
+          padding: 14px 24px;
+          background-color: #3a86ff;
           color: white;
           font-size: 16px;
+          font-weight: 600;
           border: none;
           cursor: pointer;
-          border-radius: 5px;
-          transition: background-color 0.3s;
+          border-radius: 8px;
+          transition: all 0.2s ease;
+          width: 100%;
+          margin-top: 8px;
+          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
 
         button:hover {
-          background-color: #FF4E40;
+          background-color: #2563eb;
+          transform: translateY(-2px);
+          box-shadow: 0 6px 10px rgba(0, 0, 0, 0.2);
         }
 
         .diet-plan-details {
-          margin-top: 20px;
+          margin-top: 32px;
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+          gap: 24px;
+          width: 100%;
         }
 
         .meal {
-          margin-bottom: 15px;
+          background-color: #252525;
+          padding: 24px;
+          border-radius: 12px;
+          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+          transition: transform 0.3s ease;
+          border: 1px solid #333;
+          position: relative;
+          overflow: hidden;
+        }
+
+        .meal:hover {
+          transform: translateY(-5px);
+          box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .meal-icon {
+          font-size: 28px;
+          margin-bottom: 16px;
+          background-color: #1a1a1a;
+          width: 60px;
+          height: 60px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 50%;
+          margin-left: auto;
+          margin-right: auto;
+          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+          border: 2px solid #333;
         }
 
         .meal h3 {
-          font-size: 18px;
-          color: #333;
+          font-size: 20px;
+          color: #3a86ff;
+          margin-bottom: 12px;
+          font-weight: 600;
+          text-align: center;
         }
 
         .meal p {
           font-size: 16px;
-          color: #777;
+          color: #e0e0e0;
+          line-height: 1.6;
         }
 
         .alternative-buttons {
-          margin-top: 20px;
+          margin-top: 32px;
+          width: 100%;
         }
 
         .alternative-buttons button {
-          background-color: #FF9A8B;
+          background-color: #ff0080;
           font-size: 16px;
+          font-weight: 600;
+          padding: 14px 24px;
+          width: 100%;
+          max-width: 300px;
+          margin: 0 auto;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 10px;
         }
 
         .alternative-buttons button:hover {
-          background-color: #FF6F61;
+          background-color: #e00070;
+        }
+
+        .button-icon {
+          font-size: 20px;
+          display: inline-block;
+          animation: spin 2s linear infinite;
+          animation-play-state: paused;
+        }
+
+        .alternative-buttons button:hover .button-icon {
+          animation-play-state: running;
+        }
+
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+
+        .meal-counter {
+          margin-top: 12px;
+          font-size: 14px;
+          color: #a0a0a0;
+          text-align: center;
+        }
+
+        @media (max-width: 768px) {
+          .diet-content {
+            padding: 24px 16px;
+            margin: 16px;
+            width: calc(100% - 32px);
+          }
+
+          .diet-plan-details {
+            grid-template-columns: 1fr;
+          }
+
+          .diet-content h1 {
+            font-size: 1.8rem;
+          }
         }
       `}</style>
     </div>

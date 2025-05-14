@@ -49,11 +49,22 @@ router.post("/login", (req, res) => {
         return res.status(401).json({ error: "Invalid email or password" });
       }
 
-      // Generate JWT token
+      // Ensure user object has consistent field names
+      user.id = user.user_id; // Add id field for compatibility
+
+      // Generate JWT token with role included
       const token = generateToken(user);
 
-      // Remove password from user object before sending response
-      const { password: _, ...userWithoutPassword } = user;
+      // Remove password and password_hash from user object before sending response
+      const { password: _, password_hash: __, ...userWithoutPassword } = user;
+
+      console.log("User data for token:", {
+        user_id: user.user_id,
+        id: user.id,
+        email: user.email,
+        username: user.username,
+        role: user.role
+      });
 
       // Set token in HTTP-only cookie
       res.cookie("token", token, {
@@ -63,7 +74,13 @@ router.post("/login", (req, res) => {
         sameSite: "strict"
       });
 
-      res.json({ user: userWithoutPassword });
+      // Determine redirect URL based on user role
+      const redirectUrl = user.role === 'Admin' ? '/admin' : '/dashboard';
+
+      res.json({
+        user: userWithoutPassword,
+        redirectUrl: redirectUrl
+      });
     }
   );
 });
@@ -102,7 +119,14 @@ router.post("/signup", async (req, res) => {
               return res.status(500).json({ error: "Internal server error" });
             }
 
-            const user = { id: results.insertId, email, username };
+            const user = {
+              user_id: results.insertId,
+              id: results.insertId, // Include both for compatibility
+              email,
+              username,
+              first_name,
+              last_name
+            };
 
             // Generate JWT token
             const token = generateToken(user);
@@ -134,8 +158,30 @@ router.post("/logout", (_, res) => {
 
 // Get current user route (verify token)
 router.get("/me", verifyToken, (req, res) => {
-  // req.user is set by the verifyToken middleware
-  res.json({ user: req.user });
+  // req.user is already set by the verifyToken middleware
+  // We can optionally fetch additional user data from the database
+
+  const query = `SELECT user_id, username, email, first_name, last_name, profile_picture, role FROM users WHERE user_id = ?`;
+  db.query(query, [req.user.id], (err, results) => {
+    if (err) {
+      console.error("Database error in /me route:", err);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+
+    if (results.length === 0) {
+      // User not found in database but token is valid
+      // This is unusual but can happen if user was deleted from DB but token is still valid
+      console.warn(`User with ID ${req.user.id} has valid token but not found in database`);
+      return res.json({ user: req.user }); // Return the basic user info from token
+    }
+
+    // Merge the database user data with token data
+    const userData = results[0];
+    userData.id = userData.user_id; // Ensure id field exists for compatibility
+
+    // Return the enhanced user data
+    return res.json({ user: userData });
+  });
 });
 
-module.exports = router;ss
+module.exports = router;

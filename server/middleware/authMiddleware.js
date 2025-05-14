@@ -7,6 +7,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'fitfaat-secret-key';
 const verifyToken = (req, res, next) => {
   const token = req.cookies.token;
 
+
   if (!token) {
     return res.status(401).json({ error: 'Access denied. No token provided.' });
   }
@@ -15,26 +16,26 @@ const verifyToken = (req, res, next) => {
     // Verify the token
     const verified = jwt.verify(token, JWT_SECRET);
 
-    // If both `id` and `user_id` are present in the token, use the `user_id` as the identifier
+    // Ensure both id and user_id are available for compatibility
     if (verified.id && !verified.user_id) {
-      verified.user_id = verified.id;  // Add `user_id` if only `id` is present
+      verified.user_id = verified.id;
     } else if (verified.user_id && !verified.id) {
-      verified.id = verified.user_id;  // Add `id` if only `user_id` is present
+      verified.id = verified.user_id;
     }
 
     // Log the token data for debugging
     console.log("Verified token data:", {
       id: verified.id,
       user_id: verified.user_id,
-      email: verified.email,
+      email: verified.email
     });
 
-    // Store the user data in the `req.user` object for downstream use
     req.user = verified;
 
     // Proceed to the next middleware or route handler
     next();
   } catch (error) {
+    
     console.error("Token verification error:", error);
     res.status(401).json({ error: 'Invalid token' });
   }
@@ -42,19 +43,19 @@ const verifyToken = (req, res, next) => {
 
 // Function to generate JWT token
 const generateToken = (user) => {
-  // Generate the token based on user data, using `user_id` as the unique identifier
+  // Remove sensitive information and ensure consistent field names
   const userData = {
-    user_id: user.user_id || user.id, // Always ensure `user_id` is used
+    id: user.user_id || user.id, // Use user_id from DB or id if already transformed
     email: user.email,
-    name: user.first_name ? `${user.first_name} ${user.last_name || ''}`.trim() : user.name || user.username
+    name: user.first_name ? `${user.first_name} ${user.last_name || ''}`.trim() : user.name || user.username,
+    role: user.role || 'User' // Include user role, default to 'User' if not provided
   };
 
-  // Log the user data being used to generate the token
   console.log("Generating token with user data:", userData);
 
-  // Generate the token with an expiration of 7 days
+  // Generate token with expiration of 7 days
   return jwt.sign(userData, JWT_SECRET, { expiresIn: '7d' });
 };
 
-// Export the middleware and the function
-module.exports = { verifyToken, generateToken };
+const JWT_SECRET_KEY = JWT_SECRET;
+module.exports = { verifyToken, generateToken, JWT_SECRET_KEY };

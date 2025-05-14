@@ -1,6 +1,5 @@
 "use client"
 import { useState, useEffect } from "react"
-// No need for router as auth provider handles navigation
 import { useAuth } from "./auth-provider"
 import Link from "next/link"
 import Image from "next/image"
@@ -36,10 +35,10 @@ export function LoginForm() {
       const result = await login(email, password)
 
       if (result.success) {
-        setSuccessMessage("Login successful! Redirecting to onboarding quiz...")
-        // The auth provider will handle redirection to onboarding
+        setSuccessMessage("Login successful!")
+        // The auth provider will handle redirection to dashboard
       } else {
-        setError(result.error || "Login failed. Please try again.")
+        setError(result.error || "Invalid email or password")
       }
     } catch (error) {
       console.error("Login error:", error)
@@ -47,7 +46,7 @@ export function LoginForm() {
     } finally {
       setIsLoading(false)
     }
-  }
+  };
 
   // For development, provide a demo login option
 
@@ -109,6 +108,7 @@ export function LoginForm() {
                 id="password"
                 type="password"
                 value={password}
+                minLength={6}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Enter your password"
                 required
